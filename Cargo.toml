@@ -1,0 +1,19 @@
+[package]
+name = "deeplearning_library"
+version = "0.1.0"
+authors = ["Maxence Vouette"]
+description = "A DeepLearning Library in Rust and Python."
+repository = "https://github.com/Max89100/Deeplearning_library"
+homepage = "https://github.com/Max89100/Deeplearning_library"
+license = "MIT OR Apache-2.0"
+edition = "2024"
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "deeplearning_library"
+crate-type = ["cdylib"]
+
+[dependencies]
+burn = { version = "0.19.1", features = ["wgpu"] }
+pyo3 = "0.27.0"

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["maturin>=1.11,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "deeplearning_library"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dynamic = ["version"]
+[project.optional-dependencies]
+tests = [
+    "hypothesis",
+    "sympy"
+]
+[tool.maturin]
+python-source = "python"
