@@ -1,4 +1,4 @@
-from deeplearning_library import *
+from .deeplearning_library import *
 
 
 __doc__ = deeplearning_library.__doc__

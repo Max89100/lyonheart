@@ -7,7 +7,8 @@ from sympy.ntheory import isprime
 @settings(verbosity=Verbosity.normal, max_examples=500)
 def test_is_prime(s):
     assert isprime(s) == deeplearning_library.is_prime(s)
-  
+
+
 if __name__ == "__main__":
        test_is_prime()
 
