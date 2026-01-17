@@ -1,9 +1,8 @@
 use burn::tensor::TensorData;
-use pyo3::prelude::*;
+use pyo3::{prelude::*};
 use burn::tensor::{Tensor, backend::Backend};
 use burn::backend::wgpu::WgpuDevice;
 use burn::backend::Wgpu;
-use burn::backend::Autodiff;
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};
 
 /// Declared rust functions
@@ -15,6 +14,8 @@ fn run_burn_logic<B: Backend>(data: TensorData, device: &B::Device) -> TensorDat
     // 2. On fait l'opération et on repasse en TensorData pour le retour
     (tensor1 + tensor2).into_data()
 }
+
+
 
 
 //CLASSES
@@ -52,7 +53,40 @@ impl GpuTensor {
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Erreur de reshape: {:?}", e)))?;
         Ok(py_array)
     }
+
+    //activation functions
+    pub fn relu(&self) -> PyResult<GpuTensor> {
+        let tensor = GpuTensor::_relu(&self.tensor);
+        Ok(GpuTensor { tensor })
+    }
+
+    pub fn sigmoid(&self) -> PyResult<GpuTensor> {
+        let tensor = GpuTensor::_sigmoid(&self.tensor);
+        Ok(GpuTensor { tensor } )
+    }
+
+    pub fn tanh(&self) -> PyResult<GpuTensor> { 
+        let tensor = GpuTensor::_tanh(&self.tensor);
+        Ok(GpuTensor { tensor})
+    }
+        
 }
+
+impl GpuTensor {
+    fn _relu(tensor:&Tensor<Wgpu,2>) -> Tensor<Wgpu,2> {
+        return tensor.clone().clamp_min(0.0);
+    }
+
+    fn _sigmoid(tensor:&Tensor<Wgpu,2>) -> Tensor<Wgpu,2> {
+        return tensor.clone().neg().exp().add_scalar(1.0).recip();
+    }
+
+    fn _tanh(tensor:&Tensor<Wgpu,2>) -> Tensor<Wgpu,2> {
+        return Self::_sigmoid(&tensor.clone().mul_scalar(2.0)).mul_scalar(2.0).add_scalar(-1.0);
+    }
+}
+
+
 #[pymethods]
 impl Linear {
     #[new]
@@ -115,6 +149,8 @@ fn is_prime(num: u32) -> bool {
 fn deeplearning_library(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(is_prime, m)?)?;
     m.add_function(wrap_pyfunction!(py_computation,m)?)?;
+    m.add_class::<GpuTensor>()?;
+    m.add_class::<Linear>()?;
     Ok(())
 }
 
