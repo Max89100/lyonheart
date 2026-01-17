@@ -3,6 +3,7 @@ use pyo3::prelude::*;
 use burn::tensor::{Tensor, backend::Backend};
 use burn::backend::wgpu::WgpuDevice;
 use burn::backend::Wgpu;
+use burn::backend::Autodiff;
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};
 
 /// Declared rust functions
@@ -21,6 +22,11 @@ fn run_burn_logic<B: Backend>(data: TensorData, device: &B::Device) -> TensorDat
 pub struct GpuTensor {
     pub tensor: Tensor<Wgpu,2>,
 }
+#[pyclass]
+pub struct Linear {
+    pub weights: Tensor<Wgpu,2>,
+    pub bias : Tensor<Wgpu,2>,
+}
 
 #[pymethods]
 impl GpuTensor {
@@ -34,6 +40,7 @@ impl GpuTensor {
         }
     }
     
+    
     fn to_numpy<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyArray2<f32>>> {
         let tensor_data = self.tensor.clone().into_data();
         let out_slice = tensor_data.as_slice::<f32>()
@@ -44,6 +51,20 @@ impl GpuTensor {
             .reshape(shape)
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Erreur de reshape: {:?}", e)))?;
         Ok(py_array)
+    }
+}
+#[pymethods]
+impl Linear {
+    #[new]
+    fn new(input_size:usize, output_size:usize) -> Self {
+        Self {
+            weights: Tensor::<Wgpu,2>::random([input_size,output_size], burn::tensor::Distribution::Default, &WgpuDevice::DefaultDevice),
+            bias: Tensor::<Wgpu, 2>::zeros([1, output_size], &WgpuDevice::DefaultDevice),
+        }
+    }
+    fn forward(&self, input: &GpuTensor) -> PyResult<GpuTensor> {
+        let y = input.tensor.clone().matmul(self.weights.clone()) + self.bias.clone();
+        Ok(GpuTensor {tensor: y})
     }
 }
 
