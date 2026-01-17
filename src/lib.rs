@@ -1,11 +1,9 @@
+use burn::tensor::TensorData;
 use pyo3::prelude::*;
 use burn::tensor::{Tensor, backend::Backend};
 use burn::backend::wgpu::WgpuDevice;
 use burn::backend::Wgpu;
-use numpy::pyo3::Python;
-use numpy::ndarray::array;
-use numpy::{ToPyArray, PyArray, PyArrayMethods};
-
+use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};
 
 /// Declared rust functions
 #[pyfunction]
@@ -23,25 +21,38 @@ fn is_prime(num: u32) -> bool {
 
 // Elle ne sait pas si c'est du GPU, du CPU ou du TPU. Elle sait juste faire des maths.
 // Fonction "Générique"
-fn computation<B: Backend>(data: Vec<f32>, shape: Vec<usize>, device: &B::Device) -> Vec<f32> {
-    let tensor1: Tensor<B, 2> = Tensor::from_data(Data::from(data), device);
+fn run_burn_logic<B: Backend>(data: TensorData, device: &B::Device) -> TensorData {
+    // 1. On crée le tenseur à partir du TensorData
+    let tensor1: Tensor<B, 2> = Tensor::from_data(data, device);
     let tensor2 = Tensor::ones_like(&tensor1);
-    let result = tensor1 + tensor2;
-    let output_data = result.into_data();
-    return output_data.to_vec().;    
+    
+    // 2. On fait l'opération et on repasse en TensorData pour le retour
+    (tensor1 + tensor2).into_data()
 }
 
-// Ici, on "verrouille" le type pour Python.
 #[pyfunction]
-fn py_computation() -> PyResult<Vec<Vec<f32>>> {
-    // On force l'utilisation de Wgpu (le GPU via WebGPU)
-    type MyBackend = Wgpu; 
+fn py_computation<'py>(py: Python<'py>, input: PyReadonlyArray2<'_, f32>) -> PyResult<Bound<'py, PyArray2<f32>>> {
+    type MyBackend = Wgpu;
     let device = WgpuDevice::DefaultDevice;
-    // On appelle la fonction générique en lui disant d'utiliser MyBackend
-    let _result = computation::<MyBackend>(&device);
-    Ok(_result)
-}
 
+    // A. Extraction : NumPy -> TensorData
+    let shape = [input.shape()[0], input.shape()[1]];
+    let data_vec = input.as_array().to_owned().into_raw_vec_and_offset().0;
+    let input_data = TensorData::new(data_vec, shape);
+
+    // B. Calcul sur
+    let result_data = run_burn_logic::<MyBackend>(input_data, &device);
+
+    let out_slice = result_data.as_slice::<f32>()
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyTypeError, _>("Burn data conversion failed"))?;
+    // On crée l'array 1D puis on le reshape en 2D pour correspondre à la shape d'origine
+    let py_array_1d = PyArray::from_slice(py, out_slice);
+    let py_array_2d = py_array_1d
+        .reshape(shape)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Erreur de reshape: {:?}", e)))?;
+
+    Ok(py_array_2d)
+}
 
 
 
