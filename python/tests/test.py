@@ -10,7 +10,7 @@ def test_is_prime(s):
     assert isprime(s) == dl.is_prime(s)
 
 def test_tensor_communication():
-   res = dl.py_computation(np.array([[1,2],[3,4]],dtype=np.float32))
+   res = dl.py_computation(np.array([[1,2],[3,4]],dtype=np.float32))    
    print(res)
 
 def test_layers():
@@ -30,7 +30,7 @@ def test_MLP_XOR():
     h = l1.forward(x).relu()
     y_pred = l2.forward(h).sigmoid()
     loss = dl.LossFunction.mse(y_pred,dl.GpuTensor(np.array([[0,0],[1,1],[1,1],[0,0]], dtype=np.float32)))
-    grads = loss.backward()
+    
     
 
 

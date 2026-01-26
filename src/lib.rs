@@ -34,9 +34,7 @@ pub struct Linear {
 }
 
 #[pyclass]
-pub struct PyGradients {
-    pub grads: burn::backend::autodiff::grads::Gradients,
-}
+pub struct Optimizer;
 
 #[pyclass]
 pub struct LossFunction;
@@ -83,11 +81,6 @@ impl GpuTensor {
         let tensor: Tensor<_, 2> = GpuTensor::_tanh(&self.tensor);
         Ok(GpuTensor { tensor})
     }
-
-    pub fn backward(&self) -> PyResult<PyGradients>{
-        let grads = Self::_backward(&self.tensor);
-        Ok(PyGradients {grads})
-    }
         
 }
 
@@ -124,14 +117,18 @@ impl Linear {
         Ok(GpuTensor {tensor: y})
     }
 
-    fn update(&mut self, learning_rate: f32, pygrads: &PyGradients) {
+    
+}
+
+impl Linear {
+    fn _update(&mut self, learning_rate: f32, grads: &Gradients) {
         //Récupère le gradient du tenseur courant. 
         //grads est une sorte de dictionnaire avec tous les gradients.
-        if let Some(grad_weights) = self.weights.grad(&pygrads.grads) {
+        if let Some(grad_weights) = self.weights.grad(&grads.) {
             let scaled_grad: Tensor<_, 2> = grad_weights.mul_scalar(learning_rate);
             self.weights = self.weights.clone().sub(Tensor::from_inner(scaled_grad));
         }
-        if let Some(grad_bias) = self.bias.grad(&pygrads.grads) {
+        if let Some(grad_bias) = self.bias.grad(&grads.grads) {
             let scaled_bias: Tensor<_, 2> = grad_bias.mul_scalar(learning_rate);
             self.bias = self.weights.clone().sub(Tensor::from_inner(scaled_bias));
         }
@@ -150,6 +147,13 @@ impl LossFunction {
     }
 }
 
+#[pymethods]
+impl Optimizer {
+    fn step(layer:&Linear, loss:&GpuTensor, learning_rate: f32) {
+        grads = loss._backward()
+        layer._update(learning_rate,grads)
+    }
+}
 
 //Python Functions
 #[pyfunction]
