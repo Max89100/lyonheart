@@ -4,11 +4,8 @@ use burn::tensor::{Tensor};
 use pyo3::{prelude::*, pyclass};
 
 
-
-
 #[pyclass]
 pub struct LossFunction;
-
 
 #[pymethods]
 impl LossFunction {

@@ -1,10 +1,12 @@
 use crate::tensor::GpuTensor;
+use crate::gradients::LATEST_GRADS;
 
 use burn::tensor::{Tensor};
 use burn::backend::wgpu::WgpuDevice;
 use burn::backend::Autodiff;
 use burn::backend::Wgpu;
 use pyo3::{prelude::*, pyclass};
+use pyo3::exceptions::PyRuntimeError;
 
 type MyBackend = Autodiff<Wgpu>;
 type MyDevice = WgpuDevice;
@@ -28,17 +30,25 @@ impl Linear {
         let y: Tensor<_, 2> = input.tensor.clone().matmul(self.weights.clone()) + self.bias.clone();
         Ok(GpuTensor {tensor: y})
     }
-     fn update(&mut self, learning_rate: f32, loss: &GpuTensor) {
-         let grads = GpuTensor::_backward(&loss.tensor);
+     fn update(&mut self, learning_rate: f32) -> PyResult<()> {
+        let storage = LATEST_GRADS.lock()
+        .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
         //grads est une sorte de dictionnaire avec tous les gradients.
         //La formule de l'update est : poids = poids - gradxlr
-        if let Some(grad_weights) = self.weights.grad(&grads) {
-            let scaled_grad: Tensor<_, 2> = grad_weights.mul_scalar(learning_rate);
-            self.weights = self.weights.clone().sub(Tensor::from_inner(scaled_grad));
+        if let Some(grads) = storage.as_ref() {
+            if let Some(grad_weights) = self.weights.grad(grads) {
+                let scaled_grad: Tensor<_, 2> = grad_weights.mul_scalar(learning_rate);
+                self.weights = self.weights.clone().sub(Tensor::from_inner(scaled_grad));
+            }
+            if let Some(grad_bias) = self.bias.grad(grads) {
+                let scaled_bias: Tensor<_, 2> = grad_bias.mul_scalar(learning_rate);
+                self.bias = self.bias.clone().sub(Tensor::from_inner(scaled_bias));
+            }
+            Ok(())
         }
-        if let Some(grad_bias) = self.bias.grad(&grads) {
-            let scaled_bias: Tensor<_, 2> = grad_bias.mul_scalar(learning_rate);
-            self.bias = self.weights.clone().sub(Tensor::from_inner(scaled_bias));
+        else {
+            Err(PyRuntimeError::new_err("Tentative d'update avant d'avoir appelé backward() !"))
         }
+        
     }
 }

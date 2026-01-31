@@ -3,6 +3,7 @@ use pyo3::{prelude::*};
 pub mod tensor;
 pub mod layers;
 pub mod loss;
+pub mod gradients;
 
 
 /// A Python module implemented in Rust.

@@ -1,3 +1,5 @@
+use crate::gradients::{LATEST_GRADS};
+
 use burn::tensor::{Tensor};
 use burn::tensor::TensorData;
 use burn::backend::autodiff::grads::Gradients;
@@ -5,6 +7,7 @@ use burn::backend::wgpu::WgpuDevice;
 use burn::backend::Autodiff;
 use burn::backend::Wgpu;
 use pyo3::{prelude::*, pyclass};
+use pyo3::exceptions::PyRuntimeError;
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};
 
 type MyBackend = Autodiff<Wgpu>;
@@ -24,7 +27,7 @@ impl GpuTensor {
         let data_vec: Vec<f32> = input.as_array().to_owned().into_raw_vec_and_offset().0;
         let input_data: TensorData = TensorData::new(data_vec, shape);
         Self { 
-            tensor: Tensor::from_data(input_data, &MyDevice::DefaultDevice).set_require_grad(true),
+            tensor: Tensor::from_data(input_data, &MyDevice::DefaultDevice),
         }
     }
     fn to_numpy<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyArray2<f32>>> {
@@ -53,7 +56,17 @@ impl GpuTensor {
         let tensor: Tensor<_, 2> = GpuTensor::_tanh(&self.tensor);
         Ok(GpuTensor { tensor})
     }
-        
+
+    pub fn backward(&self) -> PyResult<()>{
+        //on stocke le dictionnaire des gradients 
+        //dans une variable globale mutable
+        let grads = GpuTensor::_backward(&self.tensor);
+        let mut storage = LATEST_GRADS.lock()
+        .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
+        *storage = Some(grads);
+        Ok(())
+    }
+    
 }
 
 impl GpuTensor {
