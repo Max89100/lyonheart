@@ -12,6 +12,7 @@ pub mod gradients;
 fn deeplearning_library(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<tensor::GpuTensor>()?;
     m.add_class::<layers::Linear>()?;
+    m.add_class::<layers::InitMethod>()?;
     m.add_class::<loss::LossFunction>()?;
     Ok(())
 }
