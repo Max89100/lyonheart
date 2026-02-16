@@ -17,4 +17,15 @@ impl LossFunction {
         let mse: Tensor<_, 1> = error.mean();
         Ok( GpuTensor {tensor: mse.reshape([1,1])})
     }
+
+    #[staticmethod]
+    fn cross_entropy(y_pred:&GpuTensor, y_target:&GpuTensor) -> PyResult<GpuTensor>{
+        let y_pred_tensor = y_pred.tensor.clone();
+        let y_target_tensor = y_target.tensor.clone();
+        let eps  = 1e-10;
+        let adjusted_tensor = y_pred_tensor.add_scalar(eps);
+        let product = y_target_tensor * (adjusted_tensor.log());
+        let loss = product.sum_dim(1).neg().mean();
+        Ok(GpuTensor { tensor: loss.reshape([1,1])})
+    }
 }

@@ -57,6 +57,11 @@ impl GpuTensor {
         Ok(GpuTensor { tensor})
     }
 
+    pub fn softmax(&self) -> PyResult<GpuTensor> {
+        let tensor = GpuTensor::_softmax(&self.tensor);
+        Ok(GpuTensor { tensor })
+    }
+    
     pub fn backward(&self) -> PyResult<()>{
         //on stocke le dictionnaire des gradients 
         //dans une variable globale mutable
@@ -80,6 +85,14 @@ impl GpuTensor {
 
     fn _tanh(tensor:&Tensor<MyBackend,2>) -> Tensor<MyBackend,2> {
         return Self::_sigmoid(&tensor.clone().mul_scalar(2.0)).mul_scalar(2.0).add_scalar(-1.0);
+    }
+
+    fn _softmax(tensor: &Tensor<MyBackend,2>) -> Tensor<MyBackend,2> {
+        let max = tensor.clone().max_dim(1);
+        let centered = tensor.clone() - max;
+        let exp = centered.exp();
+        let sum = exp.clone().sum_dim(1);
+        return exp / sum;
     }
 
     pub fn _backward(tensor:&Tensor<MyBackend,2>) -> Gradients {

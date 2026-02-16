@@ -1,5 +1,6 @@
 import deeplearning_library as dl
 import numpy as np
+from keras.datasets import mnist
 
   
 def test_layers():
@@ -34,7 +35,6 @@ def test_MLP_XOR():
         l1.update(0.1)
         l2.update(0.1)
         
-
     #Evaluation
     h = l1.forward(x).relu()
     y = l2.forward(h).sigmoid()
@@ -42,8 +42,13 @@ def test_MLP_XOR():
     print("Prédictions XOR (Après entraînement) :")
     print(res)
     
-
+def test_softmax():
+    x = dl.GpuTensor(np.array([[2.0,1.0,0.1]], dtype=np.float32))
+    softmax = x.softmax()
+    print(softmax.to_numpy())
+    res = dl.LossFunction.cross_entropy(softmax,dl.GpuTensor(np.array([[1.0,0.0,0.0]], dtype=np.float32)))
+    print(res.to_numpy())
 
 if __name__ == "__main__":
-       test_MLP_XOR()
+       test_softmax()
 
