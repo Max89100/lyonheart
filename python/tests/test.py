@@ -100,10 +100,73 @@ def test_MNIST():
     print(y_gpu.to_numpy())
     print(loss.to_numpy())
 
+def one_hot_encoding(array):
+    target = np.zeros((len(array),10))
+    for i in range(len(array)):
+        target[i,array[i]] = 1.0
+    return target
 
+def real_mnist_test():
+    x_train, y_train = load_mnist("train-images", "train-labels")
+    x_test, y_test = load_mnist("test-images", "test-labels")
+    epoch = 2
+    batch_size = 64
+    n_samples = len(x_train)
+    input_size = len(x_train[0])
+    output_size = 10
+
+    # Modèle MLP
+    l1 = dl.Linear(input_size,128, dl.InitMethod.Kaiming)
+    l2 = dl.Linear(128,output_size, dl.InitMethod.Xavier)
+
+    # Entraînement
+    for n in range(0,epoch) :
+        indices = np.arange(len(x_train))
+        np.random.shuffle(indices)
+        x_train = x_train[indices]
+        y_train = y_train[indices]
+        valids = 0
+        for i in range(0, n_samples, batch_size):
+            stop = min(i + batch_size, n_samples)
+            batch_x = x_train[i:stop]
+            batch_y = one_hot_encoding(y_train[i:stop])
+            batch_x_tensor = dl.GpuTensor(np.array(batch_x, dtype=np.float32))
+            batch_y_tensor = dl.GpuTensor(np.array(batch_y, dtype=np.float32))
+
+            f = l1.forward(batch_x_tensor).relu()
+            g = l2.forward(f).softmax()
+            loss = dl.LossFunction.cross_entropy(g,batch_y_tensor)
+            loss.backward()
+            l1.update(0.1)
+            l2.update(0.1)
+            preds = np.argmax(g.to_numpy(), axis=1) # On prend l'indice de la plus haute probabilité
+            targets = np.argmax(batch_y_tensor.to_numpy(), axis=1) # On prend l'indice du 1 dans le One-Hot
+            valids = valids + np.sum(preds == targets)
+        accuracy = np.divide(valids,n_samples)
+        print(accuracy)
+
+    
+    # Evaluation
+    n_test_samples = len(x_test)
+    valids = 0
+    for i in range(0,n_test_samples,batch_size):
+        stop = min(i + batch_size, n_test_samples)
+        batch_x = x_test[i:stop]
+        batch_y = one_hot_encoding(y_test[i:stop])
+        batch_x_tensor = dl.GpuTensor(np.array(batch_x, dtype=np.float32))
+        batch_y_tensor = dl.GpuTensor(np.array(batch_y, dtype=np.float32))
+        f = l1.forward(batch_x_tensor).relu()
+        g = l2.forward(f).softmax()
+        loss = dl.LossFunction.cross_entropy(g,batch_y_tensor)
+        # Imaginons que 'logits' est la sortie de ton réseau [Batch, 10]
+        preds = np.argmax(g.to_numpy(), axis=1) # On prend l'indice de la plus haute probabilité
+        targets = np.argmax(batch_y_tensor.to_numpy(), axis=1) # On prend l'indice du 1 dans le One-Hot
+        valids = valids + np.sum(preds == targets)
+    accuracy = np.divide(valids,n_test_samples)
+    print(accuracy)
 
     
 
 if __name__ == "__main__":
-       test_MNIST()
+       real_mnist_test()
 
