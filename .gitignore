@@ -1,6 +1,8 @@
 /target
 /.hypothesis
 /.github
+/data
+!/data/mnist
 # Byte-compiled / optimized / DLL files
 __pycache__/
 .pytest_cache/

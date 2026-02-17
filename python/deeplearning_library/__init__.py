@@ -1,4 +1,6 @@
 from .deeplearning_library import *
+from . import datasets
+from .data import DataLoader, Dataset
 
 
 __doc__ = deeplearning_library.__doc__

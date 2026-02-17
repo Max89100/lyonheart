@@ -1,6 +1,9 @@
 import deeplearning_library as dl
 import numpy as np
 import os
+from deeplearning_library.datasets import IntelDataset
+from deeplearning_library import DataLoader
+import matplotlib.pyplot as plt
 
 
 def test_layers():
@@ -168,5 +171,12 @@ def real_mnist_test():
     
 
 if __name__ == "__main__":
-       real_mnist_test()
+    dataset = IntelDataset(data_path = '../../data/intel_dataset/seg_train')
+    dataloader = DataLoader(dataset, batch_size=32,shuffle=False)
+   
+    for i, (images, targets) in enumerate(dataloader):
+        print(f'Batch {i} images shape: {images.shape}')
+        print(f'Batch {i} targets shape: {targets.shape}')
+        if i == 5:
+            break
 
