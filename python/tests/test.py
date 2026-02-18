@@ -1,7 +1,7 @@
 import deeplearning_library as dl
 from deeplearning_library import core
 from deeplearning_library.datasets import IntelDataset, MNIST
-from deeplearning_library import DataLoader, Sequential, Linear, ReLU,Softmax
+from deeplearning_library import DataLoader, Sequential, Linear, ReLU,Softmax, SGD
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -61,8 +61,8 @@ def test_MNIST():
     print(dataset.num_classes)
 
     # Modèle
-    l1 = dl.Linear(dataset.num_features,128, core.InitMethod.Kaiming)
-    l2 = dl.Linear(128,dataset.num_classes, core.InitMethod.Xavier)
+    l1 = core.Linear(dataset.num_features,128, core.InitMethod.Kaiming)
+    l2 = core.Linear(128,dataset.num_classes, core.InitMethod.Xavier)
 
     # Entraînement
     epoch = 2
@@ -88,11 +88,11 @@ def test_MNIST():
     dataloader = DataLoader(evaluation,64,True)
     valids = 0
     for i, (images, targets) in enumerate(dataloader):
-        x_tensor = dl.GpuTensor(images)
-        y_tensor = dl.GpuTensor(targets)
+        x_tensor = core.GpuTensor(images)
+        y_tensor = core.GpuTensor(targets)
         f = l1.forward(x_tensor).relu()
         g = l2.forward(f).softmax()
-        loss = dl.LossFunction.cross_entropy(g,y_tensor)
+        loss = core.LossFunction.cross_entropy(g,y_tensor)
         loss.backward()
         l1.update(0.1)
         l2.update(0.1)
@@ -112,18 +112,33 @@ def test_Intel_Dataset():
             break
 
 if __name__ == "__main__":
-    
+    #test_MNIST()
+
+
     dataset = MNIST("../../data/mnist", train=True,one_hot=True)
     dataloader = DataLoader(dataset,batch_size=64,shuffle=True)
-    model = Sequential([Linear(784,128),ReLU(),Linear(128,10),Softmax()])
+    model = Sequential([Linear(784,128),ReLU(),Linear(128,10, core.InitMethod.Xavier),Softmax()])
+    optimizer = SGD(model.parameters(),0.1)
+
+    for n in range(10):
+        valids = 0
+        for i, (images, labels) in enumerate(dataloader):
+            y_pred = model(core.GpuTensor(images))
+            y_target = core.GpuTensor(labels)
+            loss = core.LossFunction.cross_entropy(y_pred,y_target)
+            loss.backward()
+            optimizer.step()
+            #model.layers[0].layer.update(0.1)
+            #model.layers[2].layer.update(0.1)
+            preds = np.argmax(y_pred.to_numpy(), axis=1) # On prend l'indice de la plus haute probabilité
+            targets = np.argmax(y_target.to_numpy(), axis=1) # On prend l'indice du 1 dans le One-Hot
+            valids = valids + np.sum(preds == targets)
+        accuracy = np.divide(valids,dataset.num_samples)
+        print(accuracy)
+        print(loss.to_numpy())
     
-    for i, (images, labels) in enumerate(dataloader):
-        y_pred = model(core.GpuTensor(images))
-        y_target = core.GpuTensor(labels)
-        loss = core.LossFunction.cross_entropy(y_pred,y_target)
-        loss.backward()
-        break
-    print(model.parameters())
+
+    
     
 
     

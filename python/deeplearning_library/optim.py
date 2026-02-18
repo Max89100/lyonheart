@@ -1,7 +1,11 @@
-
-
-
-class Optim:
-    def __init__(self):
-        pass
+class SGD:
+    def __init__(self, params, lr):
+        self.params = params
+        self.lr = lr
+    
+    def step(self):
+        #[W1,b1,W2,b2,...]
+        for i in range(len(self.params)):
+            g = self.params[i].grad.mul_scalar(self.lr)
+            self.params[i] = self.params[i].sub(g)
     

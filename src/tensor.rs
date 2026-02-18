@@ -1,5 +1,4 @@
 use crate::gradients::{LATEST_GRADS};
-use crate::tensor;
 
 use burn::tensor::{Tensor};
 use burn::tensor::TensorData;
@@ -43,7 +42,23 @@ impl GpuTensor {
         Ok(py_array)
     }
 
-
+    #[getter]
+    fn grad(&self) -> PyResult<Option<GpuTensor>>{
+        let storage = LATEST_GRADS.lock()
+        .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
+        //grads est une sorte de dictionnaire avec tous les gradients.
+        //La formule de l'update est : poids = poids - gradxlr
+        if let Some(grads) = storage.as_ref() {
+            if let Some(grad_tensor) = self.tensor.grad(grads) {
+                let autodiff_grad = Tensor::<MyBackend,2>::from_inner(grad_tensor);
+                return Ok(Some(GpuTensor{tensor:autodiff_grad}));
+            }
+            else {
+                println!("Gradient NON TROUVÉ dans le dictionnaire pour cet ID.");
+            }
+        }
+        Ok(None)
+    }
 
     //activation functions
     pub fn relu(&self) -> PyResult<GpuTensor> {
@@ -76,14 +91,69 @@ impl GpuTensor {
         Ok(())
     }
 
-    //opérateurs de base
+    //opérateurs de base exposés à Python pour plus de flexibilité
     pub fn add(&self,other:&GpuTensor) -> PyResult<GpuTensor> {
         let tensor = self.tensor.clone().add(other.tensor.clone());
         Ok(GpuTensor { tensor })
     }
+    pub fn add_assign(&mut self,other:&GpuTensor) -> PyResult<()>{
+        self.tensor = self.tensor.clone().add(other.tensor.clone());
+        Ok(())
+    }
+    
+    pub fn add_scalar(&self,other:f32) -> PyResult<GpuTensor> {
+        let tensor = self.tensor.clone().add_scalar(other);
+        Ok(GpuTensor { tensor })
+    }
+    pub fn add_scalar_assign(&mut self,other:f32) -> PyResult<()> {
+        self.tensor = self.tensor.clone().add_scalar(other);
+        Ok(())
+    }
+
     pub fn mul(&self,other:&GpuTensor) -> PyResult<GpuTensor> {
         let tensor = self.tensor.clone().mul(other.tensor.clone());
         Ok(GpuTensor { tensor })
+    }
+    pub fn mul_assign(&mut self, other:&GpuTensor) -> PyResult<()> {
+        self.tensor = self.tensor.clone().mul(other.tensor.clone());
+        Ok(())
+    }
+    
+    pub fn mul_scalar(&self,other:f32) -> PyResult<GpuTensor> {
+        let tensor = self.tensor.clone().mul_scalar(other);
+        Ok(GpuTensor { tensor })
+    }
+    pub fn mul_scalar_assign(&mut self,other:f32) -> PyResult<()> {
+        self.tensor = self.tensor.clone().mul_scalar(other);
+        Ok(())
+    }
+
+
+    pub fn div(&self,other:&GpuTensor) -> PyResult<GpuTensor> {
+        let tensor = self.tensor.clone().div(other.tensor.clone());
+        Ok(GpuTensor { tensor })
+    }
+    pub fn div_assign(&mut self, other:&GpuTensor) -> PyResult<()> {
+        self.tensor = self.tensor.clone().div(other.tensor.clone());
+        Ok(())
+    }
+
+    pub fn sub(&self,other:&GpuTensor) -> PyResult<GpuTensor> {
+        let tensor = self.tensor.clone().sub(other.tensor.clone());
+        Ok(GpuTensor { tensor })
+    }
+    pub fn sub_assign(&mut self,other:&GpuTensor) -> PyResult<()> {
+        self.tensor.inplace(|tensor| tensor.sub(other.tensor.clone()));
+        Ok(())
+    }
+
+    pub fn matmul(&self, other:&GpuTensor) -> PyResult<GpuTensor> {
+        let tensor = self.tensor.clone().matmul(other.tensor.clone());
+        Ok(GpuTensor { tensor })
+    }
+    pub fn matmul_assign(&mut self, other:&GpuTensor) -> PyResult<()> {
+        self.tensor = self.tensor.clone().matmul(other.tensor.clone());
+        Ok(())
     }
     
 }
@@ -110,6 +180,6 @@ impl GpuTensor {
     }
 
     pub fn _backward(tensor:&Tensor<MyBackend,2>) -> Gradients {
-        return tensor.clone().backward()
+        return tensor.backward()
     }
 }
