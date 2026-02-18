@@ -116,15 +116,7 @@ if __name__ == "__main__":
     dataset = MNIST("../../data/mnist", train=True,one_hot=True)
     dataloader = DataLoader(dataset,batch_size=64,shuffle=True)
     model = Sequential([Linear(784,128),ReLU(),Linear(128,10),Softmax()])
-    
-    for i, (images, target) in enumerate(dataloader):
-        y_pred = model(core.GpuTensor(images))
-        y_target = core.GpuTensor(target)
-        loss = core.LossFunction.cross_entropy(y_pred,y_target)
-        print(loss.to_numpy())
-        loss.backward()
-        if i == 5:
-            break
+    print(model.parameters())
 
     
 

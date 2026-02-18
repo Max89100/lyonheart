@@ -69,7 +69,7 @@ impl Linear {
         let y: Tensor<_, 2> = input.tensor.clone().matmul(self.weights.clone()) + self.bias.clone();
         Ok(GpuTensor {tensor: y})
     }
-     fn update(&mut self, learning_rate: f32) -> PyResult<()> {
+    fn update(&mut self, learning_rate: f32) -> PyResult<()> {
         let storage = LATEST_GRADS.lock()
         .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
         //grads est une sorte de dictionnaire avec tous les gradients.
@@ -87,8 +87,11 @@ impl Linear {
         }
         else {
             Err(PyRuntimeError::new_err("Tentative d'update avant d'avoir appelé backward() !"))
-        }
-        
+        }  
+    }
+
+    fn parameters(&self) -> PyResult<(GpuTensor,GpuTensor)>{
+        Ok((GpuTensor{tensor: self.weights.clone()}, GpuTensor{tensor: self.bias.clone()}))
     }
 }
 
