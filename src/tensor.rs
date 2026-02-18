@@ -1,4 +1,5 @@
 use crate::gradients::{LATEST_GRADS};
+use crate::tensor;
 
 use burn::tensor::{Tensor};
 use burn::tensor::TensorData;
@@ -41,6 +42,9 @@ impl GpuTensor {
             .map_err(|e: PyErr| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Erreur de reshape: {:?}", e)))?;
         Ok(py_array)
     }
+
+
+
     //activation functions
     pub fn relu(&self) -> PyResult<GpuTensor> {
         let tensor: Tensor<_, 2> = GpuTensor::_relu(&self.tensor);
@@ -70,6 +74,16 @@ impl GpuTensor {
         .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
         *storage = Some(grads);
         Ok(())
+    }
+
+    //opérateurs de base
+    pub fn add(&self,other:&GpuTensor) -> PyResult<GpuTensor> {
+        let tensor = self.tensor.clone().add(other.tensor.clone());
+        Ok(GpuTensor { tensor })
+    }
+    pub fn mul(&self,other:&GpuTensor) -> PyResult<GpuTensor> {
+        let tensor = self.tensor.clone().mul(other.tensor.clone());
+        Ok(GpuTensor { tensor })
     }
     
 }
