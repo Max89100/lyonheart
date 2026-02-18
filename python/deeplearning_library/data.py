@@ -1,4 +1,3 @@
-import deeplearning_library as dl
 import numpy as np
 
 # Classe Dataset abstraite

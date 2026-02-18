@@ -18,6 +18,7 @@ pub struct Linear {
     pub weights: Tensor<MyBackend,2>,
     pub bias : Tensor<MyBackend,2>,
 }
+
 #[pyclass]
 #[derive(Clone)]
 pub enum InitMethod {
@@ -25,6 +26,13 @@ pub enum InitMethod {
     Kaiming,
     Default
 }
+
+#[pyclass]
+pub struct ReLU();
+#[pyclass]
+pub struct Sigmoid();
+#[pyclass]
+pub struct Softmax();
 
 #[pymethods]
 impl Linear {
@@ -81,5 +89,39 @@ impl Linear {
             Err(PyRuntimeError::new_err("Tentative d'update avant d'avoir appelé backward() !"))
         }
         
+    }
+}
+
+#[pymethods]
+impl ReLU {
+    #[new]
+    pub fn new() -> Self{
+        ReLU {}
+    }
+
+    pub fn forward(&self,input: &GpuTensor) -> PyResult<GpuTensor> {
+        input.relu()
+    }
+}
+
+#[pymethods]
+impl Sigmoid {
+    #[new]
+    pub fn new() -> Self{
+        Sigmoid{}
+    }
+    pub fn forward(&self,input: &GpuTensor) -> PyResult<GpuTensor> {
+        input.sigmoid()
+    }
+}
+#[pymethods]
+impl Softmax {
+    #[new]
+    pub fn new() -> Self{
+        Softmax{}
+    }
+
+    pub fn forward(&self,input: &GpuTensor) -> PyResult<GpuTensor> {
+        input.softmax()
     }
 }

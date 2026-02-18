@@ -18,3 +18,4 @@ tests = [
 ]
 [tool.maturin]
 python-source = "python"
+module-name = "deeplearning_library._deeplearning_core"

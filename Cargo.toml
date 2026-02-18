@@ -11,7 +11,7 @@ readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "deeplearning_library"
+name = "_deeplearning_core"
 crate-type = ["cdylib"]
 
 [dependencies]

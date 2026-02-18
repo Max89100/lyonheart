@@ -9,9 +9,12 @@ pub mod gradients;
 /// A Python module implemented in Rust.
 /// We expose our Rust functions in the final Python module
 #[pymodule]
-fn deeplearning_library(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn _deeplearning_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<tensor::GpuTensor>()?;
     m.add_class::<layers::Linear>()?;
+    m.add_class::<layers::ReLU>()?;
+    m.add_class::<layers::Sigmoid>()?;
+    m.add_class::<layers::Softmax>()?;
     m.add_class::<layers::InitMethod>()?;
     m.add_class::<loss::LossFunction>()?;
     Ok(())

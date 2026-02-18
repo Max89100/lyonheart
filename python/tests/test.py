@@ -1,10 +1,10 @@
 import deeplearning_library as dl
-import numpy as np
-import os
+from deeplearning_library import core
 from deeplearning_library.datasets import IntelDataset, MNIST
-from deeplearning_library import DataLoader
+from deeplearning_library import DataLoader, Sequential, Linear, ReLU,Softmax
+import numpy as np
 import matplotlib.pyplot as plt
-
+from tqdm import tqdm
 
 def test_layers():
     l1 = dl.Linear(2,4)
@@ -52,25 +52,28 @@ def test_softmax():
     res = dl.LossFunction.cross_entropy(softmax,dl.GpuTensor(np.array([[1.0,0.0,0.0]], dtype=np.float32)))
     print(res.to_numpy())
 
-    
-if __name__ == "__main__":
+def test_MNIST():
+
     dataset = MNIST("../../data/mnist", train=True,one_hot=True)
+    evaluation = MNIST("../../data/mnist", train=False,one_hot=True)
     dataloader = DataLoader(dataset, batch_size=64,shuffle=True)
     print(dataset.num_features)
     print(dataset.num_classes)
 
-    l1 = dl.Linear(dataset.num_features,128, dl.InitMethod.Kaiming)
-    l2 = dl.Linear(128,dataset.num_classes, dl.InitMethod.Xavier)
+    # Modèle
+    l1 = dl.Linear(dataset.num_features,128, core.InitMethod.Kaiming)
+    l2 = dl.Linear(128,dataset.num_classes, core.InitMethod.Xavier)
 
+    # Entraînement
     epoch = 2
-    for n in range(epoch):
+    for n in tqdm(range(epoch)):
         valids = 0
         for i, (images, targets) in enumerate(dataloader):
-            x_tensor = dl.GpuTensor(images)
-            y_tensor = dl.GpuTensor(targets)
+            x_tensor = core.GpuTensor(images)
+            y_tensor = core.GpuTensor(targets)
             f = l1.forward(x_tensor).relu()
             g = l2.forward(f).softmax()
-            loss = dl.LossFunction.cross_entropy(g,y_tensor)
+            loss = core.LossFunction.cross_entropy(g,y_tensor)
             loss.backward()
             l1.update(0.1)
             l2.update(0.1)
@@ -79,5 +82,50 @@ if __name__ == "__main__":
             valids = valids + np.sum(preds == targets)
         accuracy = np.divide(valids,len(dataset))
         print(accuracy)
+
+    
+    # Evaluation
+    dataloader = DataLoader(evaluation,64,True)
+    valids = 0
+    for i, (images, targets) in enumerate(dataloader):
+        x_tensor = dl.GpuTensor(images)
+        y_tensor = dl.GpuTensor(targets)
+        f = l1.forward(x_tensor).relu()
+        g = l2.forward(f).softmax()
+        loss = dl.LossFunction.cross_entropy(g,y_tensor)
+        loss.backward()
+        l1.update(0.1)
+        l2.update(0.1)
+        preds = np.argmax(g.to_numpy(), axis=1) # On prend l'indice de la plus haute probabilité
+        targets = np.argmax(y_tensor.to_numpy(), axis=1) # On prend l'indice du 1 dans le One-Hot
+        valids = valids + np.sum(preds == targets)
+    accuracy = np.divide(valids,len(evaluation))
+    print(accuracy)
+
+def test_Intel_Dataset():
+    dataset = IntelDataset(data_path="../../data/intel_dataset/seg_train")
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=False)
+    for i, (images, targets) in enumerate(dataloader):
+        print(f'Batch {i} images shape: {images.shape}')
+        print(f'Batch {i} targets shape: {targets.shape}')
+        if i == 5:
+            break
+
+if __name__ == "__main__":
+    
+    dataset = MNIST("../../data/mnist", train=True,one_hot=True)
+    dataloader = DataLoader(dataset,batch_size=64,shuffle=True)
+    model = Sequential([Linear(784,128),ReLU(),Linear(128,10),Softmax()])
+    
+    for i, (images, target) in enumerate(dataloader):
+        y_pred = model(core.GpuTensor(images))
+        y_target = core.GpuTensor(target)
+        loss = core.LossFunction.cross_entropy(y_pred,y_target)
+        print(loss.to_numpy())
+        loss.backward()
+        if i == 5:
+            break
+
+    
 
 
