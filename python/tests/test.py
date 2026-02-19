@@ -112,24 +112,21 @@ def test_Intel_Dataset():
             break
 
 if __name__ == "__main__":
-    #test_MNIST()
-
 
     dataset = MNIST("../../data/mnist", train=True,one_hot=True)
     dataloader = DataLoader(dataset,batch_size=64,shuffle=True)
     model = Sequential([Linear(784,128),ReLU(),Linear(128,10, core.InitMethod.Xavier),Softmax()])
-    optimizer = SGD(model.parameters(),0.1)
-    print(optimizer.params)
+    optimizer = SGD(model.parameters(),0.01)
     
-    '''for n in range(10):
+    for n in tqdm(range(2)):
         valids = 0
         for i, (images, labels) in enumerate(dataloader):
-            print(i)
             y_pred = model(core.GpuTensor(images))
             y_target = core.GpuTensor(labels)
             loss = core.LossFunction.cross_entropy(y_pred,y_target)
-            loss.backward()
+            model.backward(loss)
             optimizer.step()
+            #print(model.layers[0].layer.parameters()[0].tensor.to_numpy())
             #model.layers[0].layer.update(0.1)
             #model.layers[2].layer.update(0.1)
             preds = np.argmax(y_pred.to_numpy(), axis=1) # On prend l'indice de la plus haute probabilité
@@ -137,7 +134,7 @@ if __name__ == "__main__":
             valids = valids + np.sum(preds == targets)
         accuracy = np.divide(valids,dataset.num_samples)
         print(accuracy)
-        print(loss.to_numpy())'''
+        print(loss.to_numpy())
     
 
     

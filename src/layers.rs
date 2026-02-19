@@ -1,7 +1,7 @@
+use std::cell::RefCell;
+use std::rc::Rc;
 use crate::tensor::GpuTensor;
 use crate::parameter::Parameter;
-
-
 use burn::prelude::ToElement;
 use burn::module::Param;
 use burn::tensor::{Tensor};
@@ -15,8 +15,8 @@ type MyDevice = WgpuDevice;
 
 #[pyclass(unsendable)]
 pub struct Linear {
-    pub weights: Param<Tensor<MyBackend,2>>,
-    pub bias : Param<Tensor<MyBackend,2>>,
+    pub weights: Rc<RefCell<Param<Tensor<MyBackend,2>>>>,
+    pub bias : Rc<RefCell<Param<Tensor<MyBackend,2>>>>,
 }
 
 #[pyclass]
@@ -44,8 +44,8 @@ impl Linear {
             InitMethod::Xavier => {
                 let alpha = (6.0 / (input_size + output_size).to_f32()).sqrt();
                 return Self {
-                    weights: Param::from_tensor(Tensor::<MyBackend,2>::random([input_size,output_size], burn::tensor::Distribution::Uniform(-alpha.to_f64(), alpha.to_f64()), &MyDevice::DefaultDevice)),
-                    bias: Param::from_tensor(Tensor::<MyBackend, 2>::zeros([1, output_size], &MyDevice::DefaultDevice).set_require_grad(true))
+                    weights: Rc::new(RefCell::new(Param::from_tensor(Tensor::<MyBackend,2>::random([input_size,output_size], burn::tensor::Distribution::Uniform(-alpha.to_f64(), alpha.to_f64()), &MyDevice::DefaultDevice)).set_require_grad(true))),
+                    bias: Rc::new(RefCell::new(Param::from_tensor(Tensor::<MyBackend, 2>::zeros([1, output_size], &MyDevice::DefaultDevice).set_require_grad(true))))
                 }
             }
             // Kaiming (normal) permet d'optimiser l'initialsiation des couches
@@ -53,22 +53,29 @@ impl Linear {
             InitMethod::Kaiming => {
                 let sigma = (2.0 / input_size.to_f32()).sqrt();
                 return Self {
-                    weights: Param::from_tensor(Tensor::<MyBackend,2>::random([input_size,output_size], burn::tensor::Distribution::Normal(0.0, sigma.to_f64()), &MyDevice::DefaultDevice)),
-                    bias: Param::from_tensor(Tensor::<MyBackend, 2>::full([1, output_size], 0.01, &MyDevice::DefaultDevice).set_require_grad(true))
+                    weights: Rc::new(RefCell::new(Param::from_tensor(Tensor::<MyBackend,2>::random([input_size,output_size], burn::tensor::Distribution::Normal(0.0, sigma.to_f64()), &MyDevice::DefaultDevice)).set_require_grad(true))),
+                    bias: Rc::new(RefCell::new(Param::from_tensor(Tensor::<MyBackend, 2>::full([1, output_size], 0.01, &MyDevice::DefaultDevice).set_require_grad(true))))
                 }
             }
             InitMethod::Default => {
                 return Self {
-                    weights: Param::from_tensor(Tensor::<MyBackend,2>::random([input_size,output_size], burn::tensor::Distribution::Default, &MyDevice::DefaultDevice)),
-                    bias: Param::from_tensor(Tensor::<MyBackend, 2>::zeros([1, output_size], &MyDevice::DefaultDevice).set_require_grad(true)),
+                    weights: Rc::new(RefCell::new(Param::from_tensor(Tensor::<MyBackend,2>::random([input_size,output_size], burn::tensor::Distribution::Default, &MyDevice::DefaultDevice)).set_require_grad(true))),
+                    bias: Rc::new(RefCell::new(Param::from_tensor(Tensor::<MyBackend, 2>::zeros([1, output_size], &MyDevice::DefaultDevice).set_require_grad(true)))),
                 }
             }
         }
     }
     fn forward(&self, input: &GpuTensor) -> PyResult<GpuTensor> {
-        let y: Tensor<_, 2> = input.tensor.clone().matmul(self.weights.val()) + self.bias.val();
-        Ok(GpuTensor {tensor: y})
-    }
+    // 1. On "emprunte" le contenu du RefCell en lecture
+    let w = self.weights.borrow();
+    let b = self.bias.borrow();
+
+    // 2. On utilise .val() sur le Param emprunté
+    // .matmul() et + fonctionnent car Burn implémente les traits sur les références
+    let y = input.tensor.clone().matmul(w.val()).add(b.val());
+
+    Ok(GpuTensor { tensor: y })
+}
     
     // fn update(&mut self, learning_rate: f32) -> PyResult<()> {
     //     let storage = LATEST_GRADS.lock()
@@ -93,8 +100,8 @@ impl Linear {
 
     fn parameters(&self) -> PyResult<Vec<Parameter>>{
         Ok(vec![
-            Parameter {inner: self.weights.clone()},
-            Parameter {inner: self.bias.clone()},
+            Parameter {param: self.weights.clone()},
+            Parameter {param: self.bias.clone()},
         ])
     }
 }

@@ -43,6 +43,9 @@ class Sequential:
             x = self.layers[i].forward(x)
         return x
     
+    def backward(self,loss):
+        loss.backward(self.parameters())
+    
     def parameters(self):
         """
         Return the model's parameters as a flat list.

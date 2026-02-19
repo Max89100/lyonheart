@@ -45,13 +45,23 @@ impl GpuTensor {
     pub fn backward(&self,all_parameters: Vec<Parameter>) -> PyResult<()>{
         let grads = GpuTensor::_backward(&self.tensor);
         let mut grads_params = GradientsParams::new();
+
+        //let mut count = 0;
         for p in all_parameters {
-            // On demande au "sac en vrac" : "As-tu le gradient pour ce paramètre précis ?"
-            if let Some(grad) = p.inner.grad(&grads) {
-                // Si oui, on le range dans notre dictionnaire avec l'ID du paramètre
-                grads_params.register(p.inner.id, grad);
+            // 1. On ouvre le RefCell une seule fois pour cette itération (plus propre)
+            let p_inner = p.param.borrow(); 
+            
+            // 2. On cherche le gradient dans le sac 'grads'
+            if let Some(grad) = p_inner.grad(&grads) {
+                // 3. On CLONE l'ID car register() en prend la propriété
+                // On passe 'grad' (qui est déjà une référence ou un clone léger de Tenseur)
+                grads_params.register(p_inner.id.clone(), grad);
+                //count += 1;
+            } else {
+                //println!("Pas de gradient pour ce paramètre !");
             }
         }
+        //println!("Gradients enregistrés : {} / {}", count,4);
         //on stocke le dictionnaire des gradients 
         //dans une variable globale mutable
         let mut storage = LATEST_GRADS.lock()
