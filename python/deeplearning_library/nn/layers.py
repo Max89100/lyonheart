@@ -44,13 +44,17 @@ class Sequential:
         return x
     
     def parameters(self):
-        parameters = []
-        for layer in self.layers:
-            layer_parameter = layer.parameters()
-            if layer_parameter != []:
-                parameters.append(layer_parameter[0])
-                parameters.append(layer_parameter[1])
-        return parameters
+        """
+        Return the model's parameters as a flat list.
+        """
+        # On itère sur les couches, on récupère les params, 
+        # et on ne garde que ceux qui ne sont pas vides.
+        return [
+            p 
+            for layer in self.layers 
+            for p in layer.parameters() 
+            if layer.parameters()
+        ]
 
 
 

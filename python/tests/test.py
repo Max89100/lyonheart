@@ -119,8 +119,9 @@ if __name__ == "__main__":
     dataloader = DataLoader(dataset,batch_size=64,shuffle=True)
     model = Sequential([Linear(784,128),ReLU(),Linear(128,10, core.InitMethod.Xavier),Softmax()])
     optimizer = SGD(model.parameters(),0.1)
-
-    for n in range(10):
+    print(optimizer.params)
+    
+    '''for n in range(10):
         valids = 0
         for i, (images, labels) in enumerate(dataloader):
             print(i)
@@ -136,7 +137,7 @@ if __name__ == "__main__":
             valids = valids + np.sum(preds == targets)
         accuracy = np.divide(valids,dataset.num_samples)
         print(accuracy)
-        print(loss.to_numpy())
+        print(loss.to_numpy())'''
     
 
     

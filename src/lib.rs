@@ -4,6 +4,7 @@ pub mod tensor;
 pub mod layers;
 pub mod loss;
 pub mod gradients;
+pub mod parameter;
 
 
 /// A Python module implemented in Rust.

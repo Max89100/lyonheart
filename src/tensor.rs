@@ -1,5 +1,6 @@
 use crate::gradients::{LATEST_GRADS};
-
+use crate::parameter::Parameter;
+use burn::{optim::GradientsParams};
 use burn::tensor::{Tensor};
 use burn::tensor::TensorData;
 use burn::backend::autodiff::grads::Gradients;
@@ -15,7 +16,7 @@ type MyDevice = WgpuDevice;
 
 
 #[pyclass]
-pub struct GpuTensor {
+pub struct GpuTensor { //A Renommer CoreTensor ou BackendTensor
     pub tensor: Tensor<MyBackend,2>,
 }
 
@@ -41,23 +42,22 @@ impl GpuTensor {
             .map_err(|e: PyErr| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Erreur de reshape: {:?}", e)))?;
         Ok(py_array)
     }
-
-    #[getter]
-    fn grad(&self) -> PyResult<Option<GpuTensor>>{
-        let storage = LATEST_GRADS.lock()
-        .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
-        //grads est une sorte de dictionnaire avec tous les gradients.
-        //La formule de l'update est : poids = poids - gradxlr
-        if let Some(grads) = storage.as_ref() {
-            if let Some(grad_tensor) = self.tensor.grad(grads) {
-                let autodiff_grad = Tensor::<MyBackend,2>::from_inner(grad_tensor);
-                return Ok(Some(GpuTensor{tensor:autodiff_grad}));
-            }
-            else {
-                println!("Gradient NON TROUVÉ dans le dictionnaire pour cet ID.");
+    pub fn backward(&self,all_parameters: Vec<Parameter>) -> PyResult<()>{
+        let grads = GpuTensor::_backward(&self.tensor);
+        let mut grads_params = GradientsParams::new();
+        for p in all_parameters {
+            // On demande au "sac en vrac" : "As-tu le gradient pour ce paramètre précis ?"
+            if let Some(grad) = p.inner.grad(&grads) {
+                // Si oui, on le range dans notre dictionnaire avec l'ID du paramètre
+                grads_params.register(p.inner.id, grad);
             }
         }
-        Ok(None)
+        //on stocke le dictionnaire des gradients 
+        //dans une variable globale mutable
+        let mut storage = LATEST_GRADS.lock()
+        .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
+        *storage = Some(grads_params);
+        Ok(())
     }
 
     //activation functions
@@ -81,15 +81,6 @@ impl GpuTensor {
         Ok(GpuTensor { tensor })
     }
     
-    pub fn backward(&self) -> PyResult<()>{
-        //on stocke le dictionnaire des gradients 
-        //dans une variable globale mutable
-        let grads = GpuTensor::_backward(&self.tensor);
-        let mut storage = LATEST_GRADS.lock()
-        .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
-        *storage = Some(grads);
-        Ok(())
-    }
 
     //opérateurs de base exposés à Python pour plus de flexibilité
     pub fn add(&self,other:&GpuTensor) -> PyResult<GpuTensor> {
