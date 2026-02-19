@@ -7,5 +7,5 @@ class SGD:
         #[W1,b1,W2,b2,...]
         for i in range(len(self.params)):
             g = self.params[i].grad.mul_scalar(self.lr)
-            self.params[i] = self.params[i].sub(g)
+            self.params[i].sub_assign(g)
     

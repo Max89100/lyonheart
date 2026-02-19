@@ -123,6 +123,7 @@ if __name__ == "__main__":
     for n in range(10):
         valids = 0
         for i, (images, labels) in enumerate(dataloader):
+            print(i)
             y_pred = model(core.GpuTensor(images))
             y_target = core.GpuTensor(labels)
             loss = core.LossFunction.cross_entropy(y_pred,y_target)

@@ -143,7 +143,11 @@ impl GpuTensor {
         Ok(GpuTensor { tensor })
     }
     pub fn sub_assign(&mut self,other:&GpuTensor) -> PyResult<()> {
-        self.tensor.inplace(|tensor| tensor.sub(other.tensor.clone()));
+        println!("ID avant : {:?}", self.tensor);
+        let new_tensor = self.tensor.clone().sub(other.tensor.clone());
+        self.tensor = new_tensor;
+        println!("ID après : {:?}", self.tensor);
+        //self.tensor.inplace(|tensor| tensor.sub(other.tensor.clone()));
         Ok(())
     }
 
