@@ -1,72 +1,87 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-
-use crate::gradients::LATEST_GRADS;
-use crate::tensor::GpuTensor;
+use crate::tensor::CoreTensor;
 use burn::module::Param;
 use burn::backend::Autodiff;
 use burn::backend::Wgpu;
-use burn::tensor::{Tensor, TensorData};
-use numpy::{PyReadonlyArray2, PyUntypedArrayMethods};
+use burn::tensor::{Tensor};
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::{pyclass};
 use pyo3::{prelude::*};
-use burn::backend::wgpu::WgpuDevice;
 type MyBackend = Autodiff<Wgpu>;
-type MyDevice = WgpuDevice;
 
+use burn::{optim::GradientsParams};
+use std::sync::Mutex;
+use lazy_static::lazy_static;
+
+lazy_static! {
+    // Un stockage global sécurisé pour le dernier calcul de gradient
+    pub static ref LATEST_GRADS: Mutex<Option<GradientsParams>> = Mutex::new(None);
+}
+
+pub type SharedParam<B, const D: usize> = Rc<RefCell<Param<Tensor<B, D>>>>;
 
 #[pyclass(unsendable)]
 #[derive(Clone)]
 pub struct Parameter {
-    pub param: Rc<RefCell<Param<Tensor<MyBackend, 2>>>>
+    pub param: SharedParam<MyBackend, 2>
 }
 
 #[pymethods]
 impl Parameter {
-    #[new]
-    fn new(input: PyReadonlyArray2<'_,f32>) -> Self {
-        let shape: [usize; 2] = [input.shape()[0], input.shape()[1]];
-        let data_vec: Vec<f32> = input.as_array().to_owned().into_raw_vec_and_offset().0;
-        let input_data: TensorData = TensorData::new(data_vec, shape);
-        Self { 
-            param: Rc::new(RefCell::new(Param::from_tensor(Tensor::from_data(input_data, &MyDevice::DefaultDevice)))),
+    #[getter]
+    fn grad(&self) -> PyResult<Option<CoreTensor>> {
+        let storage = LATEST_GRADS.lock()
+            .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu"))?;
+
+        if let Some(grads) = storage.as_ref() {
+            // .borrow() permet de juste lire, .borrow_mut d'écrire aussi
+            let param_borrow = self.param.borrow(); 
+            let param_id = &param_borrow.id; // On accède à l'ID interne de Burn
+
+            if let Some(grad_tensor) = grads.get(*param_id) {
+                let autodiff_grad = Tensor::<MyBackend, 2>::from_inner(grad_tensor);
+                return Ok(Some(CoreTensor { tensor: autodiff_grad }));
+            } else {
+                //println!("Gradient NON TROUVÉ pour l'ID: {:?}", param_id);
+            }
         }
+        Ok(None)
     }
 
     #[getter]
-fn grad(&self) -> PyResult<Option<GpuTensor>> {
-    let storage = LATEST_GRADS.lock()
-        .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu"))?;
-
-    if let Some(grads) = storage.as_ref() {
-        // ÉTAPE CLÉ : On emprunte le Param pour lire son ID
-        // On utilise .borrow() car on veut juste LIRE
-        let param_borrow = self.param.borrow(); 
-        let param_id = &param_borrow.id; // On accède à l'ID interne de Burn
-
-        if let Some(grad_tensor) = grads.get(*param_id) {
-            let autodiff_grad = Tensor::<MyBackend, 2>::from_inner(grad_tensor);
-            return Ok(Some(GpuTensor { tensor: autodiff_grad }));
-        } else {
-            //println!("Gradient NON TROUVÉ pour l'ID: {:?}", param_id);
-        }
-    }
-    Ok(None)
-}
-
-    #[getter]
-    fn tensor(&self) -> PyResult<GpuTensor> {
-        Ok(GpuTensor { tensor: self.param.borrow().val() })
+    pub fn tensor(&self) -> PyResult<CoreTensor> {
+        Ok(CoreTensor { tensor: self._tensor()})
     }
 
-    pub fn sub_assign(&self, other: &GpuTensor) -> PyResult<()> {
-        let mut p = self.param.borrow_mut(); // On demande l'accès en écriture
-        let updated_value = p.val().sub(other.tensor.clone()).detach();
-        let id = p.id.clone();
-        // On remplace le Param à l'intérieur du RefCell
-        *p = Param::initialized(id,updated_value).set_require_grad(true);
+    pub fn sub_assign(&self, other: &CoreTensor) -> PyResult<()> {
+        let updated_value = {
+            let p = self.param.borrow(); // On demande l'accès en lecture
+            p.val().sub(other.tensor.clone()).detach()
+        };
+        self._update_value(updated_value);
         Ok(())
     }
+
 }
+
+impl Parameter {
+    fn _update_value(&self, new_value: Tensor<MyBackend, 2>) {
+        let mut p = self.param.borrow_mut();
+        let id = p.id.clone();
+        *p = Param::initialized(id, new_value).set_require_grad(true);
+    }
+
+    pub fn _alloc(value: Tensor<MyBackend, 2>) -> Self {
+        let param = Param::from_tensor(value).set_require_grad(true);
+        Self {
+            param: Rc::new(RefCell::new(param)),
+        }
+    }
+
+    pub fn _tensor(&self) -> Tensor<MyBackend,2> {
+        self.param.borrow().val()
+    }
+}
+
 

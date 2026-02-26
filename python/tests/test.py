@@ -9,7 +9,7 @@ from tqdm import tqdm
 def test_layers():
     l1 = dl.Linear(2,4)
     l2 = dl.Linear(4, 1)
-    x = dl.GpuTensor(np.array([[0,0], [0,1], [1,0], [1,1]], dtype=np.float32))
+    x = dl.CoreTensor(np.array([[0,0], [0,1], [1,0], [1,1]], dtype=np.float32))
     for i in range(3):
         h = l1.forward(x).relu()
         y = l2.forward(h).sigmoid()
@@ -18,7 +18,7 @@ def test_layers():
         print(res)
 
 def test_MLP_XOR():
-    x = dl.GpuTensor(np.array([[0,0], [0,1], [1,0], [1,1]], dtype=np.float32))
+    x = dl.CoreTensor(np.array([[0,0], [0,1], [1,0], [1,1]], dtype=np.float32))
     l1 = dl.Linear(2,4, dl.InitMethod.Kaiming)
     l2 = dl.Linear(4, 1, dl.InitMethod.Xavier)
     h = l1.forward(x).relu()
@@ -31,7 +31,7 @@ def test_MLP_XOR():
         #forward pass
         h = l1.forward(x).relu()
         y_pred = l2.forward(h).sigmoid()
-        loss = dl.LossFunction.mse(y_pred,dl.GpuTensor(np.array([[0,0],[1,1],[1,1],[0,0]], dtype=np.float32)))
+        loss = dl.LossFunction.mse(y_pred,dl.CoreTensor(np.array([[0,0],[1,1],[1,1],[0,0]], dtype=np.float32)))
         print(loss.to_numpy())
         #backward pass
         loss.backward()
@@ -46,10 +46,10 @@ def test_MLP_XOR():
     print(res)
     
 def test_softmax():
-    x = dl.GpuTensor(np.array([[2.0,1.0,0.1]], dtype=np.float32))
+    x = dl.CoreTensor(np.array([[2.0,1.0,0.1]], dtype=np.float32))
     softmax = x.softmax()
     print(softmax.to_numpy())
-    res = dl.LossFunction.cross_entropy(softmax,dl.GpuTensor(np.array([[1.0,0.0,0.0]], dtype=np.float32)))
+    res = dl.LossFunction.cross_entropy(softmax,dl.CoreTensor(np.array([[1.0,0.0,0.0]], dtype=np.float32)))
     print(res.to_numpy())
 
 def test_MNIST():
@@ -69,8 +69,8 @@ def test_MNIST():
     for n in tqdm(range(epoch)):
         valids = 0
         for i, (images, targets) in enumerate(dataloader):
-            x_tensor = core.GpuTensor(images)
-            y_tensor = core.GpuTensor(targets)
+            x_tensor = core.CoreTensor(images)
+            y_tensor = core.CoreTensor(targets)
             f = l1.forward(x_tensor).relu()
             g = l2.forward(f).softmax()
             loss = core.LossFunction.cross_entropy(g,y_tensor)
@@ -88,8 +88,8 @@ def test_MNIST():
     dataloader = DataLoader(evaluation,64,True)
     valids = 0
     for i, (images, targets) in enumerate(dataloader):
-        x_tensor = core.GpuTensor(images)
-        y_tensor = core.GpuTensor(targets)
+        x_tensor = core.CoreTensor(images)
+        y_tensor = core.CoreTensor(targets)
         f = l1.forward(x_tensor).relu()
         g = l2.forward(f).softmax()
         loss = core.LossFunction.cross_entropy(g,y_tensor)
@@ -111,8 +111,7 @@ def test_Intel_Dataset():
         if i == 5:
             break
 
-if __name__ == "__main__":
-
+def test_MNIST_enhanced():
     dataset = MNIST("../../data/mnist", train=True,one_hot=True)
     dataloader = DataLoader(dataset,batch_size=64,shuffle=True)
     model = Sequential([Linear(784,128),ReLU(),Linear(128,10, core.InitMethod.Xavier),Softmax()])
@@ -121,20 +120,21 @@ if __name__ == "__main__":
     for n in tqdm(range(2)):
         valids = 0
         for i, (images, labels) in enumerate(dataloader):
-            y_pred = model(core.GpuTensor(images))
-            y_target = core.GpuTensor(labels)
+            y_pred = model(core.CoreTensor(images))
+            y_target = core.CoreTensor(labels)
             loss = core.LossFunction.cross_entropy(y_pred,y_target)
             model.backward(loss)
             optimizer.step()
-            #print(model.layers[0].layer.parameters()[0].tensor.to_numpy())
-            #model.layers[0].layer.update(0.1)
-            #model.layers[2].layer.update(0.1)
             preds = np.argmax(y_pred.to_numpy(), axis=1) # On prend l'indice de la plus haute probabilité
             targets = np.argmax(y_target.to_numpy(), axis=1) # On prend l'indice du 1 dans le One-Hot
             valids = valids + np.sum(preds == targets)
         accuracy = np.divide(valids,dataset.num_samples)
         print(accuracy)
         print(loss.to_numpy())
+
+if __name__ == "__main__":
+    test_MNIST_enhanced()
+    
     
 
     

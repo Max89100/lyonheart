@@ -1,4 +1,4 @@
-use crate::gradients::{LATEST_GRADS};
+use crate::parameter::LATEST_GRADS;
 use crate::parameter::Parameter;
 use burn::{optim::GradientsParams};
 use burn::tensor::{Tensor};
@@ -16,12 +16,12 @@ type MyDevice = WgpuDevice;
 
 
 #[pyclass]
-pub struct GpuTensor { //A Renommer CoreTensor ou BackendTensor
+pub struct CoreTensor{
     pub tensor: Tensor<MyBackend,2>,
 }
 
 #[pymethods]
-impl GpuTensor {
+impl CoreTensor {
     #[new]
     fn new(input: PyReadonlyArray2<'_,f32>) -> Self {
         let shape: [usize; 2] = [input.shape()[0], input.shape()[1]];
@@ -43,27 +43,15 @@ impl GpuTensor {
         Ok(py_array)
     }
     pub fn backward(&self,all_parameters: Vec<Parameter>) -> PyResult<()>{
-        let grads = GpuTensor::_backward(&self.tensor);
+        let grads = CoreTensor::_backward(&self.tensor);
         let mut grads_params = GradientsParams::new();
 
-        //let mut count = 0;
         for p in all_parameters {
-            // 1. On ouvre le RefCell une seule fois pour cette itération (plus propre)
             let p_inner = p.param.borrow(); 
-            
-            // 2. On cherche le gradient dans le sac 'grads'
             if let Some(grad) = p_inner.grad(&grads) {
-                // 3. On CLONE l'ID car register() en prend la propriété
-                // On passe 'grad' (qui est déjà une référence ou un clone léger de Tenseur)
                 grads_params.register(p_inner.id.clone(), grad);
-                //count += 1;
-            } else {
-                //println!("Pas de gradient pour ce paramètre !");
             }
         }
-        //println!("Gradients enregistrés : {} / {}", count,4);
-        //on stocke le dictionnaire des gradients 
-        //dans une variable globale mutable
         let mut storage = LATEST_GRADS.lock()
         .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
         *storage = Some(grads_params);
@@ -71,58 +59,58 @@ impl GpuTensor {
     }
 
     //activation functions
-    pub fn relu(&self) -> PyResult<GpuTensor> {
-        let tensor: Tensor<_, 2> = GpuTensor::_relu(&self.tensor);
-        Ok(GpuTensor { tensor })
+    pub fn relu(&self) -> PyResult<CoreTensor> {
+        let tensor: Tensor<_, 2> = CoreTensor::_relu(&self.tensor);
+        Ok(CoreTensor { tensor })
     }
 
-    pub fn sigmoid(&self) -> PyResult<GpuTensor> {
-        let tensor: Tensor<_, 2> = GpuTensor::_sigmoid(&self.tensor);
-        Ok(GpuTensor { tensor } )
+    pub fn sigmoid(&self) -> PyResult<CoreTensor> {
+        let tensor: Tensor<_, 2> = CoreTensor::_sigmoid(&self.tensor);
+        Ok(CoreTensor { tensor } )
     }
 
-    pub fn tanh(&self) -> PyResult<GpuTensor> { 
-        let tensor: Tensor<_, 2> = GpuTensor::_tanh(&self.tensor);
-        Ok(GpuTensor { tensor})
+    pub fn tanh(&self) -> PyResult<CoreTensor> { 
+        let tensor: Tensor<_, 2> = CoreTensor::_tanh(&self.tensor);
+        Ok(CoreTensor { tensor})
     }
 
-    pub fn softmax(&self) -> PyResult<GpuTensor> {
-        let tensor = GpuTensor::_softmax(&self.tensor);
-        Ok(GpuTensor { tensor })
+    pub fn softmax(&self) -> PyResult<CoreTensor> {
+        let tensor = CoreTensor::_softmax(&self.tensor);
+        Ok(CoreTensor { tensor })
     }
     
 
     //opérateurs de base exposés à Python pour plus de flexibilité
-    pub fn add(&self,other:&GpuTensor) -> PyResult<GpuTensor> {
+    pub fn add(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
         let tensor = self.tensor.clone().add(other.tensor.clone());
-        Ok(GpuTensor { tensor })
+        Ok(CoreTensor { tensor })
     }
-    pub fn add_assign(&mut self,other:&GpuTensor) -> PyResult<()>{
+    pub fn add_assign(&mut self,other:&CoreTensor) -> PyResult<()>{
         self.tensor = self.tensor.clone().add(other.tensor.clone());
         Ok(())
     }
     
-    pub fn add_scalar(&self,other:f32) -> PyResult<GpuTensor> {
+    pub fn add_scalar(&self,other:f32) -> PyResult<CoreTensor> {
         let tensor = self.tensor.clone().add_scalar(other);
-        Ok(GpuTensor { tensor })
+        Ok(CoreTensor { tensor })
     }
     pub fn add_scalar_assign(&mut self,other:f32) -> PyResult<()> {
         self.tensor = self.tensor.clone().add_scalar(other);
         Ok(())
     }
 
-    pub fn mul(&self,other:&GpuTensor) -> PyResult<GpuTensor> {
+    pub fn mul(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
         let tensor = self.tensor.clone().mul(other.tensor.clone());
-        Ok(GpuTensor { tensor })
+        Ok(CoreTensor { tensor })
     }
-    pub fn mul_assign(&mut self, other:&GpuTensor) -> PyResult<()> {
+    pub fn mul_assign(&mut self, other:&CoreTensor) -> PyResult<()> {
         self.tensor = self.tensor.clone().mul(other.tensor.clone());
         Ok(())
     }
     
-    pub fn mul_scalar(&self,other:f32) -> PyResult<GpuTensor> {
+    pub fn mul_scalar(&self,other:f32) -> PyResult<CoreTensor> {
         let tensor = self.tensor.clone().mul_scalar(other);
-        Ok(GpuTensor { tensor })
+        Ok(CoreTensor { tensor })
     }
     pub fn mul_scalar_assign(&mut self,other:f32) -> PyResult<()> {
         self.tensor = self.tensor.clone().mul_scalar(other);
@@ -130,40 +118,37 @@ impl GpuTensor {
     }
 
 
-    pub fn div(&self,other:&GpuTensor) -> PyResult<GpuTensor> {
+    pub fn div(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
         let tensor = self.tensor.clone().div(other.tensor.clone());
-        Ok(GpuTensor { tensor })
+        Ok(CoreTensor { tensor })
     }
-    pub fn div_assign(&mut self, other:&GpuTensor) -> PyResult<()> {
+    pub fn div_assign(&mut self, other:&CoreTensor) -> PyResult<()> {
         self.tensor = self.tensor.clone().div(other.tensor.clone());
         Ok(())
     }
 
-    pub fn sub(&self,other:&GpuTensor) -> PyResult<GpuTensor> {
+    pub fn sub(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
         let tensor = self.tensor.clone().sub(other.tensor.clone());
-        Ok(GpuTensor { tensor })
+        Ok(CoreTensor { tensor })
     }
-    pub fn sub_assign(&mut self,other:&GpuTensor) -> PyResult<()> {
-        println!("ID avant : {:?}", self.tensor);
+    pub fn sub_assign(&mut self,other:&CoreTensor) -> PyResult<()> {
         let new_tensor = self.tensor.clone().sub(other.tensor.clone());
         self.tensor = new_tensor;
-        println!("ID après : {:?}", self.tensor);
-        //self.tensor.inplace(|tensor| tensor.sub(other.tensor.clone()));
         Ok(())
     }
 
-    pub fn matmul(&self, other:&GpuTensor) -> PyResult<GpuTensor> {
+    pub fn matmul(&self, other:&CoreTensor) -> PyResult<CoreTensor> {
         let tensor = self.tensor.clone().matmul(other.tensor.clone());
-        Ok(GpuTensor { tensor })
+        Ok(CoreTensor { tensor })
     }
-    pub fn matmul_assign(&mut self, other:&GpuTensor) -> PyResult<()> {
+    pub fn matmul_assign(&mut self, other:&CoreTensor) -> PyResult<()> {
         self.tensor = self.tensor.clone().matmul(other.tensor.clone());
         Ok(())
     }
     
 }
 
-impl GpuTensor {
+impl CoreTensor {
     fn _relu(tensor:&Tensor<MyBackend,2>) -> Tensor<MyBackend,2> {
         return tensor.clone().clamp_min(0.0);
     }
