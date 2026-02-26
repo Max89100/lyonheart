@@ -1,5 +1,6 @@
 use crate::parameter::LATEST_GRADS;
 use crate::parameter::Parameter;
+use crate::tensor;
 use burn::{optim::GradientsParams};
 use burn::tensor::{Tensor};
 use burn::tensor::TensorData;
@@ -10,14 +11,21 @@ use burn::backend::Wgpu;
 use pyo3::{prelude::*, pyclass};
 use pyo3::exceptions::PyRuntimeError;
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};
+use std::ops::Sub;
 
 type MyBackend = Autodiff<Wgpu>;
 type MyDevice = WgpuDevice;
 
-
 #[pyclass]
-pub struct CoreTensor{
+pub struct CoreTensor {
     pub tensor: Tensor<MyBackend,2>,
+}
+
+impl Sub for CoreTensor {
+    type Output = CoreTensor;
+    fn sub(self, rhs: Self) -> Self::Output {
+        CoreTensor { tensor: self.tensor.sub(rhs.tensor) }
+    }
 }
 
 #[pymethods]
@@ -58,6 +66,120 @@ impl CoreTensor {
         Ok(())
     }
 
+
+    //Magic Methods Python
+    fn __sub__(&self, other: &CoreTensor) -> PyResult<CoreTensor> {
+        self.sub(other)
+    }
+    fn sub(&self, other: &CoreTensor) -> PyResult<CoreTensor> {
+        Ok(CoreTensor { 
+            tensor: self.tensor.clone().sub(other.tensor.clone()) 
+        })
+    }
+
+    fn __add__(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
+        self.add(other)
+    }
+    fn add(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().add(other.tensor.clone());
+        Ok(CoreTensor { tensor })
+    }
+
+    fn __mul__(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
+        self.mul(other)
+    }
+    fn mul(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().mul(other.tensor.clone());
+        Ok(CoreTensor { tensor })
+    }
+
+    fn truediv(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().div(other.tensor.clone());
+        Ok(CoreTensor { tensor })
+    }
+    fn __truediv__(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
+        self.truediv(other)
+    }
+
+    fn __matmul__(&self, other:&CoreTensor) -> PyResult<CoreTensor> {
+        self.matmul(other)
+    }
+    fn matmul(&self, other:&CoreTensor) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().matmul(other.tensor.clone());
+        Ok(CoreTensor { tensor })
+    }
+
+    fn __neg__(&self) -> PyResult<CoreTensor> {
+        self.neg()
+    }
+    fn neg(&self) -> PyResult<CoreTensor> {
+        let tensor = -self.tensor.clone();
+        Ok(CoreTensor { tensor })
+    }
+
+    fn __pow__(&self, other: &CoreTensor, _modulo:Option<PyObject>) -> PyResult<CoreTensor> {
+        self.pow(other, _modulo)
+    }
+    fn pow(&self, other: &CoreTensor, _modulo:Option<PyObject>) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().powf(other.tensor.clone());
+        Ok(CoreTensor { tensor })
+    }
+
+    pub fn __iadd__(&mut self,other:&CoreTensor) -> PyResult<()>{
+        self.tensor = self.tensor.clone().add(other.tensor.clone());
+        Ok(())
+    }
+
+    pub fn __isub__(&mut self,other:&CoreTensor) -> PyResult<()> {
+        let new_tensor = self.tensor.clone().sub(other.tensor.clone());
+        self.tensor = new_tensor;
+        Ok(())
+    }
+
+    pub fn __itruediv__(&mut self, other:&CoreTensor) -> PyResult<()> {
+        self.tensor = self.tensor.clone().div(other.tensor.clone());
+        Ok(())
+    }
+
+    pub fn __imul__(&mut self, other:&CoreTensor) -> PyResult<()> {
+        self.tensor = self.tensor.clone().mul(other.tensor.clone());
+        Ok(())
+    }
+    
+    pub fn add_scalar(&self,other:f32) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().add_scalar(other);
+        Ok(CoreTensor { tensor })
+    }
+    pub fn add_scalar_assign(&mut self,other:f32) -> PyResult<()> {
+        self.tensor = self.tensor.clone().add_scalar(other);
+        Ok(())
+    }
+
+    pub fn mul_scalar(&self,other:f32) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().mul_scalar(other);
+        Ok(CoreTensor { tensor })
+    }
+    pub fn mul_scalar_assign(&mut self,other:f32) -> PyResult<()> {
+        self.tensor = self.tensor.clone().mul_scalar(other);
+        Ok(())
+    }
+    
+    pub fn matmul_assign(&mut self, other:&CoreTensor) -> PyResult<()> {
+        self.tensor = self.tensor.clone().matmul(other.tensor.clone());
+        Ok(())
+    }
+
+    fn __repr__(&self) -> String {
+        let data = self.tensor.clone().into_data();
+        format!("CoreTensor(\n{}\n, device={:?})", data, MyDevice::DefaultDevice)
+    }
+
+    fn __str__(&self) -> String {
+        self.__repr__()
+    }
+
+
+
     //activation functions
     pub fn relu(&self) -> PyResult<CoreTensor> {
         let tensor: Tensor<_, 2> = CoreTensor::_relu(&self.tensor);
@@ -77,73 +199,6 @@ impl CoreTensor {
     pub fn softmax(&self) -> PyResult<CoreTensor> {
         let tensor = CoreTensor::_softmax(&self.tensor);
         Ok(CoreTensor { tensor })
-    }
-    
-
-    //opérateurs de base exposés à Python pour plus de flexibilité
-    pub fn add(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
-        let tensor = self.tensor.clone().add(other.tensor.clone());
-        Ok(CoreTensor { tensor })
-    }
-    pub fn add_assign(&mut self,other:&CoreTensor) -> PyResult<()>{
-        self.tensor = self.tensor.clone().add(other.tensor.clone());
-        Ok(())
-    }
-    
-    pub fn add_scalar(&self,other:f32) -> PyResult<CoreTensor> {
-        let tensor = self.tensor.clone().add_scalar(other);
-        Ok(CoreTensor { tensor })
-    }
-    pub fn add_scalar_assign(&mut self,other:f32) -> PyResult<()> {
-        self.tensor = self.tensor.clone().add_scalar(other);
-        Ok(())
-    }
-
-    pub fn mul(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
-        let tensor = self.tensor.clone().mul(other.tensor.clone());
-        Ok(CoreTensor { tensor })
-    }
-    pub fn mul_assign(&mut self, other:&CoreTensor) -> PyResult<()> {
-        self.tensor = self.tensor.clone().mul(other.tensor.clone());
-        Ok(())
-    }
-    
-    pub fn mul_scalar(&self,other:f32) -> PyResult<CoreTensor> {
-        let tensor = self.tensor.clone().mul_scalar(other);
-        Ok(CoreTensor { tensor })
-    }
-    pub fn mul_scalar_assign(&mut self,other:f32) -> PyResult<()> {
-        self.tensor = self.tensor.clone().mul_scalar(other);
-        Ok(())
-    }
-
-
-    pub fn div(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
-        let tensor = self.tensor.clone().div(other.tensor.clone());
-        Ok(CoreTensor { tensor })
-    }
-    pub fn div_assign(&mut self, other:&CoreTensor) -> PyResult<()> {
-        self.tensor = self.tensor.clone().div(other.tensor.clone());
-        Ok(())
-    }
-
-    pub fn sub(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
-        let tensor = self.tensor.clone().sub(other.tensor.clone());
-        Ok(CoreTensor { tensor })
-    }
-    pub fn sub_assign(&mut self,other:&CoreTensor) -> PyResult<()> {
-        let new_tensor = self.tensor.clone().sub(other.tensor.clone());
-        self.tensor = new_tensor;
-        Ok(())
-    }
-
-    pub fn matmul(&self, other:&CoreTensor) -> PyResult<CoreTensor> {
-        let tensor = self.tensor.clone().matmul(other.tensor.clone());
-        Ok(CoreTensor { tensor })
-    }
-    pub fn matmul_assign(&mut self, other:&CoreTensor) -> PyResult<()> {
-        self.tensor = self.tensor.clone().matmul(other.tensor.clone());
-        Ok(())
     }
     
 }

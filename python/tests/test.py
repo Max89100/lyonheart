@@ -46,10 +46,10 @@ def test_MLP_XOR():
     print(res)
     
 def test_softmax():
-    x = dl.CoreTensor(np.array([[2.0,1.0,0.1]], dtype=np.float32))
+    x = core.CoreTensor(np.array([[2.0,1.0,0.1]], dtype=np.float32))
     softmax = x.softmax()
     print(softmax.to_numpy())
-    res = dl.LossFunction.cross_entropy(softmax,dl.CoreTensor(np.array([[1.0,0.0,0.0]], dtype=np.float32)))
+    res = core.LossFunction.cross_entropy(softmax,core.CoreTensor(np.array([[1.0,0.0,0.0]], dtype=np.float32)))
     print(res.to_numpy())
 
 def test_MNIST():
@@ -132,9 +132,25 @@ def test_MNIST_enhanced():
         print(accuracy)
         print(loss.to_numpy())
 
+def test_overloading_operators():
+    x = core.CoreTensor(np.array([[1,2]], dtype=np.float32))
+    y = core.CoreTensor(np.array([[3,4]],dtype=np.float32))
+    w = core.CoreTensor(np.array([[3,4], [5,6]],dtype=np.float32))
+    add = x.add(y)
+    iadd = x
+    iadd += y
+    sub = x - y
+    mul = x * y
+    truediv = x / y
+    matmul = x@w
+    neg = -w
+
+    print(add, iadd, sub,mul,truediv,matmul,neg)
+
+
+
 if __name__ == "__main__":
-    test_MNIST_enhanced()
-    
+    test_softmax()
     
 
     
