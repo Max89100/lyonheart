@@ -4,6 +4,8 @@ use crate::tensor::CoreTensor;
 use burn::module::Param;
 use burn::backend::Autodiff;
 use burn::backend::Wgpu;
+use burn::module::ParamId;
+use burn::tensor::Int;
 use burn::tensor::{Tensor};
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::{pyclass};
@@ -54,6 +56,16 @@ impl Parameter {
         Ok(CoreTensor { tensor: self._tensor()})
     }
 
+
+    pub fn add_assign(&self, other: &CoreTensor) -> PyResult<()> {
+        let updated_value = {
+            let p = self.param.borrow();
+            p.val().add(other.tensor.clone()).detach()
+        };
+        self._update_value(updated_value);
+        Ok(())
+    }
+
     pub fn sub_assign(&self, other: &CoreTensor) -> PyResult<()> {
         let updated_value = {
             let p = self.param.borrow(); // On demande l'accès en lecture
@@ -61,6 +73,41 @@ impl Parameter {
         };
         self._update_value(updated_value);
         Ok(())
+    }
+
+    pub fn mul_assign(&self, other: &CoreTensor) -> PyResult<()> {
+        let updated_value = {
+            let p = self.param.borrow();
+            p.val().mul(other.tensor.clone()).detach()
+        };
+        self._update_value(updated_value);
+        Ok(())
+    }
+
+    pub fn div_assign(&self, other: &CoreTensor) -> PyResult<()> {
+        let updated_value = {
+            let p = self.param.borrow();
+            p.val().div(other.tensor.clone()).detach()
+        };
+        self._update_value(updated_value);
+        Ok(())
+    }
+
+    //Magic Methods Python 
+    fn __iadd__(&self, other: &CoreTensor) -> PyResult<()> {
+        self.add_assign(other)
+    }
+
+    fn __isub__(&self, other: &CoreTensor) -> PyResult<()> {
+        self.sub_assign(other)
+    }
+
+    fn __imul__(&self, other: &CoreTensor) -> PyResult<()> {
+        self.mul_assign(other)
+    }
+
+    fn __itruediv__(&self, other: &CoreTensor) -> PyResult<()> {
+        self.div_assign(other)
     }
 
 }

@@ -150,7 +150,10 @@ def test_overloading_operators():
 
 
 if __name__ == "__main__":
-    test_softmax()
+    #test_MNIST_enhanced()
+    y = dl.randn((2,2))
+    print(y)
+    loss = core.L
     
 
     

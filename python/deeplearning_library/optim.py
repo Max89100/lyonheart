@@ -5,7 +5,11 @@ class SGD:
     
     def step(self):
         #[W1,b1,W2,b2,...]
-        for i in range(len(self.params)):
-           g = self.params[i].grad
-           g_scaled = g.mul_scalar(self.lr)
-           self.params[i].sub_assign(g_scaled)    
+        # p -= lr * grad 
+        # for i in range(len(self.params)):
+        #    g = self.params[i].grad
+        #    g_scaled = g.mul_scalar(self.lr)
+        #    self.params[i].sub_assign(g_scaled)   
+        for p in self.params:
+           g = p.grad
+           p -= g.mul_scalar(self.lr)

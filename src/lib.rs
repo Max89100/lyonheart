@@ -1,10 +1,12 @@
 use pyo3::{prelude::*};
+use pyo3_stub_gen::define_stub_info_gatherer;
 
 pub mod tensor;
 pub mod layers;
 pub mod loss;
 pub mod parameter;
 
+define_stub_info_gatherer!(stub_info);
 
 /// A Python module implemented in Rust.
 /// We expose our Rust functions in the final Python module
@@ -24,5 +26,4 @@ fn _deeplearning_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
 // TESTS
 #[cfg(test)]
 mod tests {
-    
 }
