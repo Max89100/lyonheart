@@ -1,5 +1,8 @@
 use crate::parameter::LATEST_GRADS;
 use crate::parameter::Parameter;
+use burn::tensor;
+use burn::tensor::Distribution;
+use burn::tensor::Shape;
 use burn::{optim::GradientsParams};
 use burn::tensor::{Tensor};
 use burn::tensor::TensorData;
@@ -7,6 +10,7 @@ use burn::backend::autodiff::grads::Gradients;
 use burn::backend::wgpu::WgpuDevice;
 use burn::backend::Autodiff;
 use burn::backend::Wgpu;
+use pyo3::types::PyList;
 use pyo3::{prelude::*, pyclass};
 use pyo3::exceptions::PyRuntimeError;
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};
@@ -39,6 +43,35 @@ impl CoreTensor {
         }
     }
 
+    #[staticmethod]
+    fn zeros(shape: Vec<usize>) -> PyResult<CoreTensor> {
+        let tensor = Tensor::zeros(Shape::from(shape), &MyDevice::DefaultDevice);
+        Ok(CoreTensor { tensor })
+    }
+
+    #[staticmethod]
+    fn ones(shape: Vec<usize>) -> PyResult<CoreTensor> {
+        let tensor = Tensor::ones(shape, &MyDevice::DefaultDevice);
+        Ok(CoreTensor { tensor })
+    }
+    #[staticmethod]
+    fn randn(shape: Vec<usize>) -> PyResult<CoreTensor> {
+        let tensor = Tensor::random(shape, Distribution::Normal(0.0, 1.0), &MyDevice::DefaultDevice);
+        Ok(CoreTensor { tensor })
+    }
+    #[staticmethod]
+    fn rand(shape: Vec<usize>) -> PyResult<CoreTensor> {
+        let tensor = Tensor::random(shape, Distribution::Default, &MyDevice::DefaultDevice);
+        Ok(CoreTensor { tensor })
+    }
+
+    fn zeros_like(&self) -> PyResult<CoreTensor> {
+        let tensor = Tensor::zeros_like(&self.tensor);
+        Ok(CoreTensor { tensor })
+    }
+
+    
+
     fn to_numpy<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyArray2<f32>>> {
         let tensor_data: TensorData = self.tensor.clone().into_data();
         let out_slice: &[f32] = tensor_data.as_slice::<f32>()
@@ -65,6 +98,8 @@ impl CoreTensor {
         *storage = Some(grads_params);
         Ok(())
     }
+
+    
 
 
     // Opérations de base

@@ -22,6 +22,22 @@ class Module:
     def backward(self,loss):
         loss.backward(self.parameters())
 
+    
+    def submodules(self):
+        """Générateur qui trouve tous les objets de type Module dans les attributs."""
+        modules = []
+        for attr_value in self.__dict__.values():
+            if isinstance(attr_value, Module):
+                modules.append(attr_value)
+                # Récursion pour les sous-sous-modules
+                modules.extend(attr_value.submodules())
+            elif isinstance(attr_value, list):
+                for item in attr_value:
+                    if isinstance(item, Module):
+                        modules.append(item)
+                        modules.extend(item.submodules())
+        return modules
+
     def parameters(self) -> list:
         params = []
         seen = set()

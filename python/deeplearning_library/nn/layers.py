@@ -31,3 +31,8 @@ class Softmax(Module):
     def __init__(self):
         super().__init__()
         self.layer = core.Softmax()
+
+class Sigmoid(Module):
+    def __init__(self):
+        super().__init__()
+        self.layer = core.Sigmoid()

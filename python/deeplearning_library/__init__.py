@@ -6,7 +6,7 @@ from . import optim
 from . import data
 from .losses import CrossEntropyLoss, MSELoss, LogSoftmax
 from .data import Dataset, DataLoader
-from .nn import Linear, ReLU, Sequential, Softmax, Module
+from .nn import Linear, ReLU, Sequential, Softmax, Module, Sigmoid
 from .optim import SGD
 import numpy as np
 import pickle
@@ -35,14 +35,28 @@ def tensor(data) -> CoreTensor:
         data = np.array(data, dtype=np.float32)
     return CoreTensor(data)
 
-def zeros(shape: tuple) -> CoreTensor:
-    return tensor(np.zeros(shape, dtype=np.float32))
+def zeros(*shape) -> CoreTensor:
+    if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+        shape = shape[0]
+    return CoreTensor.zeros(shape)
 
-def ones(shape: tuple) -> CoreTensor:
-    return tensor(np.ones(shape, dtype=np.float32))
+def ones(*shape: tuple) -> CoreTensor:
+    if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+        shape = shape[0]
+    return CoreTensor.ones(shape)
 
-def randn(shape: tuple) -> CoreTensor:
-    return tensor(np.random.randn(*shape).astype(np.float32))
+def randn(*shape: tuple) -> CoreTensor:
+    if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+        shape = shape[0]
+    return CoreTensor.randn(shape)
+
+def rand(*shape: tuple) -> CoreTensor:
+    if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+        shape = shape[0]
+    return CoreTensor.rand(shape)
+
+def zeros_like(self:CoreTensor) -> CoreTensor:
+    return self.zeros_like()
 
 
 
@@ -51,5 +65,5 @@ __all__ = [
     "CoreTensor", "Parameter", "tensor", 
     "nn", "losses", "optim", "data",
     "CrossEntropyLoss", "MSELoss", "LogSoftmax", "SGD", 
-    "DataLoader", "Dataset", "Linear", "ReLU", "Softmax", "Sequential", "Module"
+    "DataLoader", "Dataset", "Linear", "ReLU", "Softmax", "Sequential", "Module", "Sigmoid"
 ]

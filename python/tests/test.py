@@ -1,6 +1,6 @@
 import deeplearning_library as dl
 from deeplearning_library.data.datasets import MNIST
-from deeplearning_library import DataLoader, Sequential, Linear, ReLU,Softmax, SGD, MSELoss, CrossEntropyLoss, LogSoftmax, CoreTensor, InitMethod
+from deeplearning_library import DataLoader, Sequential, Linear, ReLU,Softmax, SGD, MSELoss, CrossEntropyLoss, LogSoftmax, CoreTensor, InitMethod, Sigmoid
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -115,13 +115,12 @@ def test_MNIST_enhanced():
     dataloader = DataLoader(dataset,batch_size=64,shuffle=True)
     model = Sequential([Linear(784,128),ReLU(),Linear(128,10,InitMethod.Xavier)])
     criterion = LogSoftmax()
-    optimizer = SGD(model.parameters(),0.01)
-    
+    optimizer = SGD(model.parameters(),0.1)
     for n in tqdm(range(2)):
         valids = 0
         for i, (images, labels) in enumerate(dataloader):
-            y_pred = model(CoreTensor(images))
-            y_target = CoreTensor(labels)
+            y_pred = model(dl.tensor(images))
+            y_target = dl.tensor(labels)
             loss = criterion(y_pred,y_target)
             model.backward(loss)
             optimizer.step()
@@ -131,6 +130,7 @@ def test_MNIST_enhanced():
         accuracy = np.divide(valids,dataset.num_samples)
         print(accuracy)
         print(loss.to_numpy())
+        
 
 def test_overloading_operators():
     x = core.CoreTensor(np.array([[1,2]], dtype=np.float32))
@@ -209,7 +209,7 @@ def test_save_load():
 
 
 if __name__ == "__main__":
-    test_save_load()
+    test_MNIST_enhanced()
     
     
     
