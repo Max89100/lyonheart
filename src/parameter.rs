@@ -4,12 +4,11 @@ use crate::tensor::CoreTensor;
 use burn::module::Param;
 use burn::backend::Autodiff;
 use burn::backend::Wgpu;
-use burn::module::ParamId;
-use burn::tensor::Int;
 use burn::tensor::{Tensor};
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::{pyclass};
 use pyo3::{prelude::*};
+use numpy::{PyReadonlyArray2};
 type MyBackend = Autodiff<Wgpu>;
 
 use burn::{optim::GradientsParams};
@@ -31,6 +30,11 @@ pub struct Parameter {
 
 #[pymethods]
 impl Parameter {
+    fn set(&mut self, input: PyReadonlyArray2<'_,f32>) {
+        let tensor = CoreTensor::new(input).tensor;
+        self._update_value(tensor);
+    }
+
     #[getter]
     fn grad(&self) -> PyResult<Option<CoreTensor>> {
         let storage = LATEST_GRADS.lock()

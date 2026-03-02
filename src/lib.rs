@@ -13,12 +13,13 @@ define_stub_info_gatherer!(stub_info);
 #[pymodule]
 fn _deeplearning_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<tensor::CoreTensor>()?;
+    m.add_class::<parameter::Parameter>()?;
     m.add_class::<layers::Linear>()?;
     m.add_class::<layers::ReLU>()?;
     m.add_class::<layers::Sigmoid>()?;
     m.add_class::<layers::Softmax>()?;
     m.add_class::<layers::InitMethod>()?;
-    m.add_class::<loss::LossFunction>()?;
+    //m.add_class::<loss::LossFunction>()?;
     Ok(())
 }
 

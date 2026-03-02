@@ -30,7 +30,7 @@ impl Sub for CoreTensor {
 #[pymethods]
 impl CoreTensor {
     #[new]
-    fn new(input: PyReadonlyArray2<'_,f32>) -> Self {
+    pub fn new(input: PyReadonlyArray2<'_,f32>) -> Self {
         let shape: [usize; 2] = [input.shape()[0], input.shape()[1]];
         let data_vec: Vec<f32> = input.as_array().to_owned().into_raw_vec_and_offset().0;
         let input_data: TensorData = TensorData::new(data_vec, shape);
@@ -38,6 +38,7 @@ impl CoreTensor {
             tensor: Tensor::from_data(input_data, &MyDevice::DefaultDevice),
         }
     }
+
     fn to_numpy<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyArray2<f32>>> {
         let tensor_data: TensorData = self.tensor.clone().into_data();
         let out_slice: &[f32] = tensor_data.as_slice::<f32>()
@@ -64,6 +65,7 @@ impl CoreTensor {
         *storage = Some(grads_params);
         Ok(())
     }
+
 
     // Opérations de base
     fn add(&self,other:&CoreTensor) -> PyResult<CoreTensor> {
@@ -147,25 +149,63 @@ impl CoreTensor {
         Ok(())
     }
     
-    fn pow(&self, other: &CoreTensor, _modulo:Option<PyObject>) -> PyResult<CoreTensor> {
+    fn pow(&self, other: &CoreTensor) -> PyResult<CoreTensor> {
         let tensor = self.tensor.clone().powf(other.tensor.clone());
         Ok(CoreTensor { tensor })
     }
+
+    fn pow_scalar(&self, other: f32) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().powf_scalar(other);
+        Ok(CoreTensor { tensor })
+    }
+
+    fn log(&self) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().log();
+        Ok(CoreTensor { tensor })
+    }
+
+    fn exp(&self) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().exp();
+        Ok(CoreTensor { tensor })
+    }
+
 
     fn neg(&self) -> PyResult<CoreTensor> {
         let tensor = -self.tensor.clone();
         Ok(CoreTensor { tensor })
     }
 
+
     fn matmul(&self, other:&CoreTensor) -> PyResult<CoreTensor> {
         let tensor = self.tensor.clone().matmul(other.tensor.clone());
         Ok(CoreTensor { tensor })
     }
     
-    pub fn matmul_assign(&mut self, other:&CoreTensor) -> PyResult<()> {
+    fn matmul_assign(&mut self, other:&CoreTensor) -> PyResult<()> {
         self.tensor = self.tensor.clone().matmul(other.tensor.clone());
         Ok(())
     }
+
+    fn mean(&self) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().mean();
+        Ok(CoreTensor { tensor: tensor.reshape([1,1]) })
+    }
+
+    fn sum(&self) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().sum();
+        Ok(CoreTensor { tensor: tensor.reshape([1,1]) })
+    }
+    fn sum_dim(&self, dim: i32) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().sum_dim(dim);
+        Ok(CoreTensor { tensor })
+    }
+
+    fn max_dim(&self, dim: i32) -> PyResult<CoreTensor> {
+        let tensor = self.tensor.clone().max_dim(dim);
+        Ok(CoreTensor { tensor })
+    }
+
+
 
 
     //Magic Methods Python (surcharge des opérateurs python)
@@ -194,7 +234,7 @@ impl CoreTensor {
     }
     
     fn __pow__(&self, other: &CoreTensor, _modulo:Option<PyObject>) -> PyResult<CoreTensor> {
-        self.pow(other, _modulo)
+        self.pow(other)
     }
     
     pub fn __iadd__(&mut self,other:&CoreTensor) -> PyResult<()>{

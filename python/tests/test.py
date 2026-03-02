@@ -1,7 +1,6 @@
 import deeplearning_library as dl
-from deeplearning_library import core
-from deeplearning_library.datasets import IntelDataset, MNIST
-from deeplearning_library import DataLoader, Sequential, Linear, ReLU,Softmax, SGD
+from deeplearning_library.data.datasets import MNIST
+from deeplearning_library import DataLoader, Sequential, Linear, ReLU,Softmax, SGD, MSELoss, CrossEntropyLoss, LogSoftmax, CoreTensor, InitMethod
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -114,15 +113,16 @@ def test_Intel_Dataset():
 def test_MNIST_enhanced():
     dataset = MNIST("../../data/mnist", train=True,one_hot=True)
     dataloader = DataLoader(dataset,batch_size=64,shuffle=True)
-    model = Sequential([Linear(784,128),ReLU(),Linear(128,10, core.InitMethod.Xavier),Softmax()])
+    model = Sequential([Linear(784,128),ReLU(),Linear(128,10,InitMethod.Xavier)])
+    criterion = LogSoftmax()
     optimizer = SGD(model.parameters(),0.01)
     
     for n in tqdm(range(2)):
         valids = 0
         for i, (images, labels) in enumerate(dataloader):
-            y_pred = model(core.CoreTensor(images))
-            y_target = core.CoreTensor(labels)
-            loss = core.LossFunction.cross_entropy(y_pred,y_target)
+            y_pred = model(CoreTensor(images))
+            y_target = CoreTensor(labels)
+            loss = criterion(y_pred,y_target)
             model.backward(loss)
             optimizer.step()
             preds = np.argmax(y_pred.to_numpy(), axis=1) # On prend l'indice de la plus haute probabilité
@@ -147,13 +147,72 @@ def test_overloading_operators():
 
     print(add, iadd, sub,mul,truediv,matmul,neg)
 
+def test_Module():
+    dataset = MNIST("../../data/mnist", train=True,one_hot=True)
+    dataloader = DataLoader(dataset,batch_size=64,shuffle=True)
+    model = Sequential([Linear(784,128),ReLU(),Sequential([Linear(128,64), ReLU(), Linear(64,10, InitMethod.Xavier)])])
+    criterion = LogSoftmax()
+    optimizer = SGD(model.parameters(),0.01)
+
+    for n in tqdm(range(2)):
+        valids = 0
+        for i, (images, labels) in enumerate(dataloader):
+            y_pred = model(CoreTensor(images))
+            y_target = CoreTensor(labels)
+            loss = criterion(y_pred,y_target)
+            model.backward(loss)
+            optimizer.step()
+            preds = np.argmax(y_pred.to_numpy(), axis=1) # On prend l'indice de la plus haute probabilité
+            targets = np.argmax(y_target.to_numpy(), axis=1) # On prend l'indice du 1 dans le One-Hot
+            valids = valids + np.sum(preds == targets)
+        accuracy = np.divide(valids,dataset.num_samples)
+        print(accuracy)
+        print(loss.to_numpy())
+
+def test_save_load():
+    dataset = MNIST("../../data/mnist", train=True,one_hot=True)
+    dataloader = DataLoader(dataset,batch_size=64,shuffle=True)
+    model = Sequential([Linear(784,128),ReLU(),Linear(128,10,InitMethod.Xavier)])
+    criterion = LogSoftmax()
+    optimizer = SGD(model.parameters(),0.01)
+    
+    for n in tqdm(range(2)):
+        valids = 0
+        for i, (images, labels) in enumerate(dataloader):
+            y_pred = model(CoreTensor(images))
+            y_target = CoreTensor(labels)
+            loss = criterion(y_pred,y_target)
+            model.backward(loss)
+            optimizer.step()
+            preds = np.argmax(y_pred.to_numpy(), axis=1) # On prend l'indice de la plus haute probabilité
+            targets = np.argmax(y_target.to_numpy(), axis=1) # On prend l'indice du 1 dans le One-Hot
+            valids = valids + np.sum(preds == targets)
+        accuracy = np.divide(valids,dataset.num_samples)
+        print(accuracy)
+        print(loss.to_numpy())
+    
+    dl.save(model,"model.pkl")
+    model2 = Sequential([Linear(784,128),ReLU(),Linear(128,10,InitMethod.Xavier)])
+    state = dl.load("model.pkl")
+    model2.load_state_dict(state)
+    #test
+    valids = 0
+    for i, (images, labels) in enumerate(dataloader):
+        y_pred = model2(CoreTensor(images))
+        y_target = CoreTensor(labels)
+        preds = np.argmax(y_pred.to_numpy(), axis=1) # On prend l'indice de la plus haute probabilité
+        targets = np.argmax(y_target.to_numpy(), axis=1) # On prend l'indice du 1 dans le One-Hot
+        valids = valids + np.sum(preds == targets)
+    accuracy = np.divide(valids,dataset.num_samples)
+    print(accuracy)
+
 
 
 if __name__ == "__main__":
-    #test_MNIST_enhanced()
-    y = dl.randn((2,2))
-    print(y)
-    loss = core.L
+    test_save_load()
+    
+    
+    
     
 
     
