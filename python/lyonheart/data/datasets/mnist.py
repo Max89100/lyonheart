@@ -4,6 +4,7 @@ import numpy as np
 
 class MNIST(Dataset):
     def __init__(self, data_path, train=True, one_hot=False):
+        '''Train = True récupère les set d'entraînement, et Train = False les sets de test.'''
         super().__init__()
         self.data_path = data_path
         self.train = train

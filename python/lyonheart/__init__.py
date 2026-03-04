@@ -4,10 +4,12 @@ from . import nn
 from . import losses
 from . import optim 
 from . import data
+from . import engine
 from .losses import CrossEntropyLoss, MSELoss, LogSoftmax
-from .data import Dataset, DataLoader
+from .data import Dataset, DataLoader, datasets
 from .nn import Linear, ReLU, Sequential, Softmax, Module, Sigmoid
 from .optim import SGD
+from .engine import Trainer, Metrics, Accuracy
 import numpy as np
 import pickle
 
@@ -62,8 +64,8 @@ def zeros_like(self:CoreTensor) -> CoreTensor:
 
 # Optionnel : définir ce qui est visible lors d'un "from deeplearning_library import *"
 __all__ = [
-    "CoreTensor", "Parameter", "tensor", 
+    "CoreTensor", "Parameter", "tensor", "zeros","zeros_like","ones","randn","rand", 
     "nn", "losses", "optim", "data",
     "CrossEntropyLoss", "MSELoss", "LogSoftmax", "SGD", 
-    "DataLoader", "Dataset", "Linear", "ReLU", "Softmax", "Sequential", "Module", "Sigmoid"
+    "DataLoader", "Dataset", "datasets", "Linear", "ReLU", "Softmax", "Sequential", "Module", "Sigmoid", "Trainer", "Accuracy", "Metrics"
 ]

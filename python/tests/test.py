@@ -1,6 +1,5 @@
 import lyonheart as lh
-from lyonheart.data.datasets import MNIST
-from lyonheart import DataLoader, Sequential, Linear, ReLU,Softmax, SGD, MSELoss, CrossEntropyLoss, LogSoftmax, CoreTensor, InitMethod, Sigmoid
+from lyonheart import *
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -131,7 +130,6 @@ def test_MNIST_enhanced():
         print(accuracy)
         print(loss.to_numpy())
         
-
 def test_overloading_operators():
     x = core.CoreTensor(np.array([[1,2]], dtype=np.float32))
     y = core.CoreTensor(np.array([[3,4]],dtype=np.float32))
@@ -206,10 +204,19 @@ def test_save_load():
     accuracy = np.divide(valids,dataset.num_samples)
     print(accuracy)
 
-
+def test_trainer():
+    dataset = lh.data.datasets.MNIST("../../data/mnist", train=True,one_hot=True)
+    train_loader = DataLoader(dataset,64,True)
+    test_loader = DataLoader(dataset,64,False)
+    model = Sequential([Linear(784,128), ReLU(), Linear(128,10)])
+    criterion = lh.losses.LogSoftmax()
+    optimizer = lh.optim.SGD(model.parameters(),lr = 0.1)
+    trainer = Trainer(model,optimizer,[Accuracy()])
+    trainer.train(5,train_loader,criterion)
+    trainer.evaluate(test_loader)
 
 if __name__ == "__main__":
-    test_MNIST_enhanced()
+    test_trainer()
     
     
     

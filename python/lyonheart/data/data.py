@@ -8,7 +8,7 @@ class Dataset:
         raise NotImplementedError
     
 class DataLoader:
-    def __init__(self, dataset, batch_size, shuffle=False):
+    def __init__(self, dataset:Dataset, batch_size, shuffle=False):
         self.dataset = dataset
         self.batch_size = batch_size
         self.shuffle = shuffle
