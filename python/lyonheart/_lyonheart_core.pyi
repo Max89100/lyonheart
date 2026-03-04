@@ -117,3 +117,5 @@ class InitMethod:
     Xavier: 'InitMethod'
     Kaiming: 'InitMethod'
     Default: 'InitMethod'
+
+def clear_grads() -> None: ...

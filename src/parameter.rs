@@ -17,11 +17,9 @@ use lazy_static::lazy_static;
 // static DEVICE: burn::backend::wgpu::WgpuDevice = burn::backend::wgpu::WgpuDevice::DiscreteGpu(0);
 
 //FOR BENCHMARKING
-use burn::backend::ndarray::NdArrayDevice;
 use burn::backend::NdArray;
 type MyBackend = Autodiff<NdArray<f32>>;
-type MyDevice = NdArrayDevice;
-static DEVICE: burn::backend::ndarray::NdArrayDevice = burn::backend::ndarray::NdArrayDevice::Cpu;
+// type MyBackend = NdArray<f32>; INFERENCE MODE
 
 lazy_static! {
     // Un stockage global sécurisé pour le dernier calcul de gradient
@@ -141,6 +139,14 @@ impl Parameter {
     pub fn _tensor(&self) -> Tensor<MyBackend,2> {
         self.param.borrow().val()
     }
+}
+
+
+#[pyfunction]
+pub fn clear_grads() -> PyResult<()>{
+    let mut storage = LATEST_GRADS.lock().map_err(|_| PyRuntimeError::new_err("Mutex error"))?;
+    *storage = None;
+    Ok(())
 }
 
 

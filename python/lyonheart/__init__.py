@@ -60,6 +60,10 @@ def rand(*shape: tuple) -> CoreTensor:
 def zeros_like(self:CoreTensor) -> CoreTensor:
     return self.zeros_like()
 
+def clear_grads() -> None:
+    '''Nettoie le dictionnaire des gradients pour libérer la mémoire.'''
+    core.clear_grads()
+
 
 
 # Optionnel : définir ce qui est visible lors d'un "from deeplearning_library import *"
@@ -67,5 +71,5 @@ __all__ = [
     "CoreTensor", "Parameter", "tensor", "zeros","zeros_like","ones","randn","rand", 
     "nn", "losses", "optim", "data",
     "CrossEntropyLoss", "MSELoss", "LogSoftmax", "SGD", 
-    "DataLoader", "Dataset", "datasets", "Linear", "ReLU", "Softmax", "Sequential", "Module", "Sigmoid", "Trainer", "Accuracy", "Metrics"
+    "DataLoader", "Dataset", "datasets", "Linear", "ReLU", "Softmax", "Sequential", "Module", "Sigmoid", "Trainer", "Accuracy", "Metrics", "clear_grads"
 ]

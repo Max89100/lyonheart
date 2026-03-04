@@ -13,28 +13,28 @@ torch.set_num_threads(1)
 os.environ["RAYON_NUM_THREADS"] = "1"
 
 
-def bench_lyonheart(batch_size, iters=5000):
+def bench_lyonheart(batch_size, iters):
     model = lh.nn.Sequential([lh.nn.Linear(784,128),lh.nn.ReLU(),lh.nn.Linear(128,10)])
     x = lh.randn((batch_size,784))
     # Warmup
     for _ in range(1000): _ = model(x)
 
-    gc.collect()
     start = time.perf_counter_ns()
-    for _ in range(iters):
+    for _ in range(iters):   
         y = model(x)
     return (time.perf_counter_ns() - start) / iters
 
-def bench_pytorch(batch_size, iters=5000):
+def bench_pytorch(batch_size, iters):
     model = torch.nn.Sequential(torch.nn.Linear(784,128), torch.nn.ReLU(), torch.nn.Linear(128,10)).to(torch.float32)
     x = torch.randn(batch_size,784, dtype=torch.float32)
     #Warmup
-    for _ in range(1000): _ = model(x)
+    with torch.no_grad(): 
+        for _ in range(1000): _ = model(x)
 
-    gc.collect()
-    start = time.perf_counter_ns()
-    for _ in range(iters):
-        y = model(x)
+    with torch.no_grad():
+        start = time.perf_counter_ns()
+        for _ in range(iters):
+            y = model(x)
     return (time.perf_counter_ns() - start) / iters
 
 def run_full_benchmark(batch_size, n_trials=100, iters_per_trial=1000):
@@ -55,7 +55,7 @@ def run_full_benchmark(batch_size, n_trials=100, iters_per_trial=1000):
         "LyonHeart": {
             "max": np.max(lh_throughput),    # Ta vitesse de pointe (le "Min" temps)
             "median": np.median(lh_throughput),
-            "p95": np.percentile(lh_throughput, 5), # 5% des pires perfs (lent)
+            "p95": np.percentile(lh_throughput, 5), # seuil de 5% des pires perfs (lent)
             "std": np.std(lh_throughput)     # Écart-type (stabilité)
         },
         "PyTorch": {
@@ -84,7 +84,7 @@ def print_report(stats):
 
 
 if __name__ == "__main__":
-    batch_size = 128
+    batch_size = 1
     n_trials = 100
-    stats = run_full_benchmark(batch_size,n_trials,2000)
+    stats = run_full_benchmark(batch_size,n_trials,1000)
     print_report(stats)

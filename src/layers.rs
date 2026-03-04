@@ -2,21 +2,22 @@ use crate::tensor::CoreTensor;
 use crate::parameter::Parameter;
 use burn::prelude::ToElement;
 use burn::tensor::{Tensor};
-use burn::backend::wgpu::WgpuDevice;
 use burn::backend::Autodiff;
-use burn::backend::Wgpu;
 use pyo3::{prelude::*, pyclass};
 
+// use burn::backend::wgpu::WgpuDevice;
+// use burn::backend::Wgpu;
 // type MyBackend = Autodiff<Wgpu>;
 // type MyDevice = WgpuDevice;
-// static DEVICE: burn::backend::wgpu::WgpuDevice = burn::backend::wgpu::WgpuDevice::DiscreteGpu(0);
+// static DEVICE: MyDevice = MyDevice::DiscreteGpu(0);
 
 //FOR BENCHMARKING
 use burn::backend::ndarray::NdArrayDevice;
 use burn::backend::NdArray;
 type MyBackend = Autodiff<NdArray<f32>>;
+// type MyBackend = NdArray<f32>; INFERENCE MODE
 type MyDevice = NdArrayDevice;
-static DEVICE: burn::backend::ndarray::NdArrayDevice = burn::backend::ndarray::NdArrayDevice::Cpu;
+static DEVICE: MyDevice = MyDevice::Cpu;
 
 
 #[pyclass(unsendable)]
@@ -50,8 +51,6 @@ impl Linear {
             InitMethod::Xavier => {
                 let alpha = (6.0 / (input_size + output_size).to_f32()).sqrt();
                 return Self {
-                    // weight: Parameter::_alloc(Tensor::<MyBackend,2>::random([input_size,output_size], burn::tensor::Distribution::Uniform(-alpha.to_f64(), alpha.to_f64()), &MyDevice::DefaultDevice)),
-                    // bias: Parameter::_alloc(Tensor::<MyBackend, 2>::zeros([1, output_size], &MyDevice::DefaultDevice))
                     weight: Parameter::_alloc(Tensor::<MyBackend,2>::random([input_size,output_size], burn::tensor::Distribution::Uniform(-alpha.to_f64(), alpha.to_f64()), &DEVICE)),
                     bias: Parameter::_alloc(Tensor::<MyBackend, 2>::zeros([1, output_size], &DEVICE))
 

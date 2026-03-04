@@ -6,14 +6,14 @@ use burn::{optim::GradientsParams};
 use burn::tensor::{Tensor};
 use burn::tensor::TensorData;
 use burn::backend::autodiff::grads::Gradients;
-use burn::backend::wgpu::WgpuDevice;
 use burn::backend::Autodiff;
-use burn::backend::Wgpu;
 use pyo3::{prelude::*, pyclass};
 use pyo3::exceptions::PyRuntimeError;
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};
 use std::ops::Sub;
 
+// use burn::backend::wgpu::WgpuDevice;
+// use burn::backend::Wgpu;
 // type MyBackend = Autodiff<Wgpu>;
 // type MyDevice = WgpuDevice;
 // static DEVICE: burn::backend::wgpu::WgpuDevice = burn::backend::wgpu::WgpuDevice::DiscreteGpu(0); 
@@ -22,8 +22,9 @@ use std::ops::Sub;
 use burn::backend::ndarray::NdArrayDevice;
 use burn::backend::NdArray;
 type MyBackend = Autodiff<NdArray<f32>>;
+// type MyBackend = NdArray<f32>; INFERENCE MODE
 type MyDevice = NdArrayDevice;
-static DEVICE: burn::backend::ndarray::NdArrayDevice = burn::backend::ndarray::NdArrayDevice::Cpu;
+static DEVICE: MyDevice = MyDevice::Cpu;
 
 
 #[pyclass]
@@ -91,21 +92,21 @@ impl CoreTensor {
             .map_err(|e: PyErr| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Erreur de reshape: {:?}", e)))?;
         Ok(py_array)
     }
-    pub fn backward(&self,all_parameters: Vec<Parameter>) -> PyResult<()>{
-        let grads = CoreTensor::_backward(&self.tensor);
-        let mut grads_params = GradientsParams::new();
+    // pub fn backward(&self,all_parameters: Vec<Parameter>) -> PyResult<()>{
+    //     let grads = CoreTensor::_backward(&self.tensor);
+    //     let mut grads_params = GradientsParams::new();
 
-        for p in all_parameters {
-            let p_inner = p.param.borrow(); 
-            if let Some(grad) = p_inner.grad(&grads) {
-                grads_params.register(p_inner.id.clone(), grad);
-            }
-        }
-        let mut storage = LATEST_GRADS.lock()
-        .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
-        *storage = Some(grads_params);
-        Ok(())
-    }
+    //     for p in all_parameters {
+    //         let p_inner = p.param.borrow(); 
+    //         if let Some(grad) = p_inner.grad(&grads) {
+    //             grads_params.register(p_inner.id.clone(), grad);
+    //         }
+    //     }
+    //     let mut storage = LATEST_GRADS.lock()
+    //     .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
+    //     *storage = Some(grads_params);
+    //     Ok(())
+    // }
 
     
 
@@ -351,7 +352,7 @@ impl CoreTensor {
         return exp / sum;
     }
 
-    pub fn _backward(tensor:&Tensor<MyBackend,2>) -> Gradients {
-        return tensor.backward()
-    }
+    // pub fn _backward(tensor:&Tensor<MyBackend,2>) -> Gradients {
+    //     return tensor.backward()
+    // }
 }
