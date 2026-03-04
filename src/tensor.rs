@@ -1,6 +1,5 @@
 use crate::parameter::LATEST_GRADS;
 use crate::parameter::Parameter;
-use burn::tensor;
 use burn::tensor::Distribution;
 use burn::tensor::Shape;
 use burn::{optim::GradientsParams};
@@ -10,7 +9,6 @@ use burn::backend::autodiff::grads::Gradients;
 use burn::backend::wgpu::WgpuDevice;
 use burn::backend::Autodiff;
 use burn::backend::Wgpu;
-use pyo3::types::PyList;
 use pyo3::{prelude::*, pyclass};
 use pyo3::exceptions::PyRuntimeError;
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};

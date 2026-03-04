@@ -1,4 +1,4 @@
-from .._deeplearning_core import CoreTensor
+from .._lyonheart_core import CoreTensor
 
 class Loss:
     def __call__(self, y_pred, y_true):

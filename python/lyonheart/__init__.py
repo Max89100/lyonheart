@@ -1,5 +1,5 @@
-from ._deeplearning_core import CoreTensor, Parameter, InitMethod
-from . import _deeplearning_core as core
+from ._lyonheart_core import CoreTensor, Parameter, InitMethod
+from . import _lyonheart_core as core
 from . import nn
 from . import losses
 from . import optim 

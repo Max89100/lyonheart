@@ -1,4 +1,4 @@
-from deeplearning_library import InitMethod, core
+from lyonheart import InitMethod, core
 from .module import Module
 
 class Linear(Module):
@@ -15,6 +15,7 @@ class Sequential(Module):
     def __init__(self, layers):
         super().__init__()
         self.layers = layers
+        
 
     def forward(self,x):
         for i in range(0,len(self.layers)):

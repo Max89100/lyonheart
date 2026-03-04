@@ -11,7 +11,7 @@ define_stub_info_gatherer!(stub_info);
 /// A Python module implemented in Rust.
 /// We expose our Rust functions in the final Python module
 #[pymodule]
-fn _deeplearning_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn _lyonheart_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<tensor::CoreTensor>()?;
     m.add_class::<parameter::Parameter>()?;
     m.add_class::<layers::Linear>()?;

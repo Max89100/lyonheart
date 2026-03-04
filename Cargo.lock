@@ -3,6 +3,17 @@
 version = 4
 
 [[package]]
+name = "LyonHeart_Core"
+version = "0.1.0"
+dependencies = [
+ "burn",
+ "lazy_static",
+ "numpy",
+ "pyo3",
+ "pyo3-stub-gen",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1806,17 +1817,6 @@ name = "data-encoding"
 version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7a1e2f27636f116493b8b860f5546edb47c8d8f8ea73e1d2a20be88e28d1fea"
-
-[[package]]
-name = "deeplearning_library"
-version = "0.1.0"
-dependencies = [
- "burn",
- "lazy_static",
- "numpy",
- "pyo3",
- "pyo3-stub-gen",
-]
 
 [[package]]
 name = "deranged"

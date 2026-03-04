@@ -1,4 +1,4 @@
-from deeplearning_library import Parameter
+from lyonheart import Parameter
 
 class Module: 
     def __init__(self):

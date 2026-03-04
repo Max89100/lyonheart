@@ -1,14 +1,14 @@
-import deeplearning_library as dl
-from deeplearning_library.data.datasets import MNIST
-from deeplearning_library import DataLoader, Sequential, Linear, ReLU,Softmax, SGD, MSELoss, CrossEntropyLoss, LogSoftmax, CoreTensor, InitMethod, Sigmoid
+import lyonheart as lh
+from lyonheart.data.datasets import MNIST
+from lyonheart import DataLoader, Sequential, Linear, ReLU,Softmax, SGD, MSELoss, CrossEntropyLoss, LogSoftmax, CoreTensor, InitMethod, Sigmoid
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 def test_layers():
-    l1 = dl.Linear(2,4)
-    l2 = dl.Linear(4, 1)
-    x = dl.CoreTensor(np.array([[0,0], [0,1], [1,0], [1,1]], dtype=np.float32))
+    l1 = lh.Linear(2,4)
+    l2 = lh.Linear(4, 1)
+    x = lh.CoreTensor(np.array([[0,0], [0,1], [1,0], [1,1]], dtype=np.float32))
     for i in range(3):
         h = l1.forward(x).relu()
         y = l2.forward(h).sigmoid()
@@ -17,9 +17,9 @@ def test_layers():
         print(res)
 
 def test_MLP_XOR():
-    x = dl.CoreTensor(np.array([[0,0], [0,1], [1,0], [1,1]], dtype=np.float32))
-    l1 = dl.Linear(2,4, dl.InitMethod.Kaiming)
-    l2 = dl.Linear(4, 1, dl.InitMethod.Xavier)
+    x = lh.CoreTensor(np.array([[0,0], [0,1], [1,0], [1,1]], dtype=np.float32))
+    l1 = lh.Linear(2,4, lh.InitMethod.Kaiming)
+    l2 = lh.Linear(4, 1, lh.InitMethod.Xavier)
     h = l1.forward(x).relu()
     y = l2.forward(h).sigmoid()
     res = y.to_numpy()
@@ -30,7 +30,7 @@ def test_MLP_XOR():
         #forward pass
         h = l1.forward(x).relu()
         y_pred = l2.forward(h).sigmoid()
-        loss = dl.LossFunction.mse(y_pred,dl.CoreTensor(np.array([[0,0],[1,1],[1,1],[0,0]], dtype=np.float32)))
+        loss = lh.LossFunction.mse(y_pred,lh.CoreTensor(np.array([[0,0],[1,1],[1,1],[0,0]], dtype=np.float32)))
         print(loss.to_numpy())
         #backward pass
         loss.backward()
@@ -119,8 +119,8 @@ def test_MNIST_enhanced():
     for n in tqdm(range(2)):
         valids = 0
         for i, (images, labels) in enumerate(dataloader):
-            y_pred = model(dl.tensor(images))
-            y_target = dl.tensor(labels)
+            y_pred = model(lh.tensor(images))
+            y_target = lh.tensor(labels)
             loss = criterion(y_pred,y_target)
             model.backward(loss)
             optimizer.step()
@@ -191,9 +191,9 @@ def test_save_load():
         print(accuracy)
         print(loss.to_numpy())
     
-    dl.save(model,"model.pkl")
+    lh.save(model,"model.pkl")
     model2 = Sequential([Linear(784,128),ReLU(),Linear(128,10,InitMethod.Xavier)])
-    state = dl.load("model.pkl")
+    state = lh.load("model.pkl")
     model2.load_state_dict(state)
     #test
     valids = 0

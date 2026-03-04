@@ -1,5 +1,5 @@
 [package]
-name = "deeplearning_library"
+name = "LyonHeart_Core"
 version = "0.1.0"
 authors = ["Maxence Vouette"]
 description = "A DeepLearning Library in Rust and Python."
@@ -11,7 +11,7 @@ readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "_deeplearning_core"
+name = "_lyonheart_core"
 crate-type = ["cdylib"]
 path = "src/lib.rs"
 

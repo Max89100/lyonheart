@@ -3,7 +3,7 @@ requires = ["maturin>=1.11,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "deeplearning_library"
+name = "lyonheart"
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Rust",
@@ -18,4 +18,4 @@ tests = [
 ]
 [tool.maturin]
 python-source = "python"
-module-name = "deeplearning_library._deeplearning_core"
+module-name = "lyonheart._lyonheart_core"
