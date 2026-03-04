@@ -16,7 +16,7 @@ crate-type = ["cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
-burn = { version = "0.19.1", features = ["autodiff", "wgpu"] }
+burn = { version = "0.19.1", features = ["autodiff", "ndarray", "wgpu"] }
 lazy_static = "1.5.0"
 numpy = "0.27.1"
 pyo3 = "0.27.0"

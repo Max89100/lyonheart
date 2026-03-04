@@ -212,7 +212,7 @@ def test_trainer():
     criterion = lh.losses.LogSoftmax()
     optimizer = lh.optim.SGD(model.parameters(),lr = 0.1)
     trainer = Trainer(model,optimizer,[Accuracy()])
-    trainer.train(5,train_loader,criterion)
+    trainer.train(10,train_loader,criterion)
     trainer.evaluate(test_loader)
 
 if __name__ == "__main__":

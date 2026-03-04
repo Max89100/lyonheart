@@ -9,11 +9,19 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::{pyclass};
 use pyo3::{prelude::*};
 use numpy::{PyReadonlyArray2};
-type MyBackend = Autodiff<Wgpu>;
-
 use burn::{optim::GradientsParams};
 use std::sync::Mutex;
 use lazy_static::lazy_static;
+
+// type MyBackend = Autodiff<Wgpu>;
+// static DEVICE: burn::backend::wgpu::WgpuDevice = burn::backend::wgpu::WgpuDevice::DiscreteGpu(0);
+
+//FOR BENCHMARKING
+use burn::backend::ndarray::NdArrayDevice;
+use burn::backend::NdArray;
+type MyBackend = Autodiff<NdArray<f32>>;
+type MyDevice = NdArrayDevice;
+static DEVICE: burn::backend::ndarray::NdArrayDevice = burn::backend::ndarray::NdArrayDevice::Cpu;
 
 lazy_static! {
     // Un stockage global sécurisé pour le dernier calcul de gradient

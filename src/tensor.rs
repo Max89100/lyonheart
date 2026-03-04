@@ -14,8 +14,17 @@ use pyo3::exceptions::PyRuntimeError;
 use numpy::{PyArray, PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};
 use std::ops::Sub;
 
-type MyBackend = Autodiff<Wgpu>;
-type MyDevice = WgpuDevice;
+// type MyBackend = Autodiff<Wgpu>;
+// type MyDevice = WgpuDevice;
+// static DEVICE: burn::backend::wgpu::WgpuDevice = burn::backend::wgpu::WgpuDevice::DiscreteGpu(0); 
+
+//FOR BENCHMARKING
+use burn::backend::ndarray::NdArrayDevice;
+use burn::backend::NdArray;
+type MyBackend = Autodiff<NdArray<f32>>;
+type MyDevice = NdArrayDevice;
+static DEVICE: burn::backend::ndarray::NdArrayDevice = burn::backend::ndarray::NdArrayDevice::Cpu;
+
 
 #[pyclass]
 pub struct CoreTensor {
@@ -37,29 +46,30 @@ impl CoreTensor {
         let data_vec: Vec<f32> = input.as_array().to_owned().into_raw_vec_and_offset().0;
         let input_data: TensorData = TensorData::new(data_vec, shape);
         Self { 
-            tensor: Tensor::from_data(input_data, &MyDevice::DefaultDevice),
+            //tensor: Tensor::from_data(input_data, &MyDevice::DefaultDevice),
+            tensor: Tensor::from_data(input_data, &DEVICE),
         }
     }
 
     #[staticmethod]
     fn zeros(shape: Vec<usize>) -> PyResult<CoreTensor> {
-        let tensor = Tensor::zeros(Shape::from(shape), &MyDevice::DefaultDevice);
+        let tensor = Tensor::zeros(Shape::from(shape), &DEVICE);
         Ok(CoreTensor { tensor })
     }
 
     #[staticmethod]
     fn ones(shape: Vec<usize>) -> PyResult<CoreTensor> {
-        let tensor = Tensor::ones(shape, &MyDevice::DefaultDevice);
+        let tensor = Tensor::ones(shape, &DEVICE);
         Ok(CoreTensor { tensor })
     }
     #[staticmethod]
     fn randn(shape: Vec<usize>) -> PyResult<CoreTensor> {
-        let tensor = Tensor::random(shape, Distribution::Normal(0.0, 1.0), &MyDevice::DefaultDevice);
+        let tensor = Tensor::random(shape, Distribution::Normal(0.0, 1.0), &DEVICE);
         Ok(CoreTensor { tensor })
     }
     #[staticmethod]
     fn rand(shape: Vec<usize>) -> PyResult<CoreTensor> {
-        let tensor = Tensor::random(shape, Distribution::Default, &MyDevice::DefaultDevice);
+        let tensor = Tensor::random(shape, Distribution::Default, &DEVICE);
         Ok(CoreTensor { tensor })
     }
 
@@ -288,7 +298,7 @@ impl CoreTensor {
 
     fn __repr__(&self) -> String {
         let data = self.tensor.clone().into_data();
-        format!("CoreTensor(\n{}\n, device={:?})", data, MyDevice::DefaultDevice)
+        format!("CoreTensor(\n{}\n, device={:?})", data, DEVICE)
     }
 
     fn __str__(&self) -> String {

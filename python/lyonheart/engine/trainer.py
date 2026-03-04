@@ -4,6 +4,7 @@ from ..nn.module import Module
 from ..data import DataLoader
 from .metrics import Metrics
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Trainer():
     def __init__(self,model:Module,optimizer, metrics:Metrics=None):
@@ -15,6 +16,7 @@ class Trainer():
         logs = {}
         if loss:
             logs = {"loss": f"{loss.to_numpy().item():.4f}"}
+
         for metric_fn in self.metrics:
                     metric_fn.update(y_pred,y_target)
                     val = metric_fn.compute()
