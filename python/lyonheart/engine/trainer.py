@@ -4,7 +4,6 @@ from ..nn.module import Module
 from ..data import DataLoader
 from .metrics import Metrics
 import numpy as np
-import matplotlib.pyplot as plt
 
 class Trainer():
     def __init__(self,model:Module,optimizer, metrics:Metrics=None):

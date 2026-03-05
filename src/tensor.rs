@@ -47,7 +47,6 @@ impl CoreTensor {
         let data_vec: Vec<f32> = input.as_array().to_owned().into_raw_vec_and_offset().0;
         let input_data: TensorData = TensorData::new(data_vec, shape);
         Self { 
-            //tensor: Tensor::from_data(input_data, &MyDevice::DefaultDevice),
             tensor: Tensor::from_data(input_data, &DEVICE),
         }
     }
@@ -79,8 +78,6 @@ impl CoreTensor {
         Ok(CoreTensor { tensor })
     }
 
-    
-
     fn to_numpy<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyArray2<f32>>> {
         let tensor_data: TensorData = self.tensor.clone().into_data();
         let out_slice: &[f32] = tensor_data.as_slice::<f32>()
@@ -92,21 +89,21 @@ impl CoreTensor {
             .map_err(|e: PyErr| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Erreur de reshape: {:?}", e)))?;
         Ok(py_array)
     }
-    // pub fn backward(&self,all_parameters: Vec<Parameter>) -> PyResult<()>{
-    //     let grads = CoreTensor::_backward(&self.tensor);
-    //     let mut grads_params = GradientsParams::new();
+    pub fn backward(&self,all_parameters: Vec<Parameter>) -> PyResult<()>{
+        let grads = CoreTensor::_backward(&self.tensor);
+        let mut grads_params = GradientsParams::new();
 
-    //     for p in all_parameters {
-    //         let p_inner = p.param.borrow(); 
-    //         if let Some(grad) = p_inner.grad(&grads) {
-    //             grads_params.register(p_inner.id.clone(), grad);
-    //         }
-    //     }
-    //     let mut storage = LATEST_GRADS.lock()
-    //     .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
-    //     *storage = Some(grads_params);
-    //     Ok(())
-    // }
+        for p in all_parameters {
+            let p_inner = p.param.borrow(); 
+            if let Some(grad) = p_inner.grad(&grads) {
+                grads_params.register(p_inner.id.clone(), grad);
+            }
+        }
+        let mut storage = LATEST_GRADS.lock()
+        .map_err(|_| PyRuntimeError::new_err("Le verrou des gradients est corrompu (Mutex poisoned)"))?;
+        *storage = Some(grads_params);
+        Ok(())
+    }
 
     
 
@@ -352,7 +349,7 @@ impl CoreTensor {
         return exp / sum;
     }
 
-    // pub fn _backward(tensor:&Tensor<MyBackend,2>) -> Gradients {
-    //     return tensor.backward()
-    // }
+    pub fn _backward(tensor:&Tensor<MyBackend,2>) -> Gradients {
+        return tensor.backward()
+    }
 }

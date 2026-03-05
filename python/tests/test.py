@@ -1,8 +1,10 @@
 import lyonheart as lh
 from lyonheart import *
 import numpy as np
-import matplotlib.pyplot as plt
 from tqdm import tqdm
+import gc
+import psutil
+import os
 
 def test_layers():
     l1 = lh.Linear(2,4)
@@ -215,8 +217,31 @@ def test_trainer():
     trainer.train(10,train_loader,criterion)
     trainer.evaluate(test_loader)
 
+def test_memory_leak():
+    model = Sequential([Linear(784,128), ReLU(), Linear(128,10)])
+    x = lh.randn((128,784))
+    criterion = MSELoss()
+    def get_ram():
+        process = psutil.Process(os.getpid())
+        return process.memory_info().rss / 1024 / 1024  # Mo
+
+    print(f"RAM Départ: {get_ram():.2f} Mo")
+
+    for i in range(1000):
+        # Remets bien ton backend Autodiff pour ce test
+        y = model.forward(x) 
+        loss = criterion(y, lh.randn((128,10)))
+        model.backward(loss)
+        # On n'appelle pas backward, on veut juste voir si le forward s'accumule
+        if i % 100 == 0:
+            gc.collect() # On force Python à nettoyer
+            print(f"It {i} | RAM: {get_ram():.2f} Mo")
+
+    # Si la RAM a augmenté entre It 0 et It 900 malgré le gc.collect()...
+    # C'est que tes tenseurs Rust sont "tenus" par le graphe d'Autodiff.
+
 if __name__ == "__main__":
-    test_trainer()
+    test_memory_leak()
     
     
     

@@ -4,7 +4,6 @@ use crate::parameter::clear_grads;
 
 pub mod tensor;
 pub mod layers;
-pub mod loss;
 pub mod parameter;
 
 define_stub_info_gatherer!(stub_info);
