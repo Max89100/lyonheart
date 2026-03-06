@@ -15,7 +15,7 @@ use pyo3::{prelude::*, pyclass};
 use burn::backend::ndarray::NdArrayDevice;
 use burn::backend::NdArray;
 type MyBackend = Autodiff<NdArray<f32>>;
-// type MyBackend = NdArray<f32>; INFERENCE MODE
+// type MyBackend = NdArray<f32>; //INFERENCE MODE
 type MyDevice = NdArrayDevice;
 static DEVICE: MyDevice = MyDevice::Cpu;
 
@@ -74,11 +74,18 @@ impl Linear {
         }
     }
 
-    fn forward(&self, input: &CoreTensor) -> PyResult<CoreTensor> {
+    // fn forward(&self, input: &CoreTensor) -> PyResult<CoreTensor> {
+    //     let w = self.weight._tensor();
+    //     let b = self.bias._tensor();
+    //     let y = input.tensor.clone().matmul(w).add(b);
+    //     Ok(CoreTensor { tensor: y })
+    // }
+    fn forward<'py>(&self, input: &Bound<'py, CoreTensor>) -> PyResult<Bound<'py, CoreTensor>> {
         let w = self.weight._tensor();
         let b = self.bias._tensor();
-        let y = input.tensor.clone().matmul(w).add(b);
-        Ok(CoreTensor { tensor: y })
+        let y = input.borrow().tensor.clone(); 
+        let tensor = y.matmul(w).add(b);
+        Bound::new(input.py(), CoreTensor { tensor })
     }
 
     #[getter]

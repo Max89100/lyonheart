@@ -1,6 +1,7 @@
 use pyo3::{prelude::*};
 use pyo3_stub_gen::define_stub_info_gatherer;
 use crate::parameter::clear_grads;
+use crate::parameter::ffi;
 
 pub mod tensor;
 pub mod layers;
@@ -20,6 +21,7 @@ fn _lyonheart_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<layers::Softmax>()?;
     m.add_class::<layers::InitMethod>()?;
     m.add_function(wrap_pyfunction!(clear_grads,m)?)?;
+    m.add_function(wrap_pyfunction!(ffi,m)?)?;
     Ok(())
 }
 

@@ -22,7 +22,7 @@ use std::ops::Sub;
 use burn::backend::ndarray::NdArrayDevice;
 use burn::backend::NdArray;
 type MyBackend = Autodiff<NdArray<f32>>;
-// type MyBackend = NdArray<f32>; INFERENCE MODE
+// type MyBackend = NdArray<f32>; //INFERENCE MODE
 type MyDevice = NdArrayDevice;
 static DEVICE: MyDevice = MyDevice::Cpu;
 

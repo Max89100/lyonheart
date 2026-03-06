@@ -19,7 +19,7 @@ use lazy_static::lazy_static;
 //FOR BENCHMARKING
 use burn::backend::NdArray;
 type MyBackend = Autodiff<NdArray<f32>>;
-// type MyBackend = NdArray<f32>; INFERENCE MODE
+// type MyBackend = NdArray<f32>; //INFERENCE MODE
 
 lazy_static! {
     // Un stockage global sécurisé pour le dernier calcul de gradient
@@ -146,6 +146,11 @@ impl Parameter {
 pub fn clear_grads() -> PyResult<()>{
     let mut storage = LATEST_GRADS.lock().map_err(|_| PyRuntimeError::new_err("Mutex error"))?;
     *storage = None;
+    Ok(())
+}
+
+#[pyfunction]
+pub fn ffi()->PyResult<()> {
     Ok(())
 }
 

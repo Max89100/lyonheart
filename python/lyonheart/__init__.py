@@ -64,6 +64,8 @@ def clear_grads() -> None:
     '''Nettoie le dictionnaire des gradients pour libérer la mémoire.'''
     core.clear_grads()
 
+def ffi() -> None:
+    core.ffi()
 
 
 # Optionnel : définir ce qui est visible lors d'un "from deeplearning_library import *"
