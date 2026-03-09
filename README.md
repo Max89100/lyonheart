@@ -7,16 +7,17 @@ LyonHeart est un framework de Deep Learning hybride conçu pour allier l'express
 Le projet est distribué sous forme de `wheel` Python pré-compilée. Pour l'installer dans votre environnement, utilisez `pip` :
 
 ```bash
-pip install LyonHeart-0.1.0.whl
+pip install lyonheart-0.1.0-cp312-cp312-win_amd64.whl
 ```
 
 ## Test
-Placez le dossier data/mnist à l'emplacement du code.
+Placez le dossier data/mnist à l'emplacement du code (attention à la manière dont vous réalisez l'extraction !)
 
 ```python
 import lyonheart as lh
 from lyonheart import *
-dataset = lh.data.datasets.MNIST("../../data/mnist", train=True,one_hot=True)
+
+dataset = lh.data.datasets.MNIST("data/mnist", train=True,one_hot=True)
 train_loader = DataLoader(dataset,64,True)
 test_loader = DataLoader(dataset,64,False)
 model = Sequential([Linear(784,128), ReLU(), Linear(128,10)])
