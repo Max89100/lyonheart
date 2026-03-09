@@ -10,7 +10,7 @@ Le projet est distribué sous forme de `wheel` Python pré-compilée. Pour l'ins
 pip install lyonheart-0.1.0-cp312-cp312-win_amd64.whl
 ```
 
-## Test
+## Exemple
 Placez le dossier data/mnist à l'emplacement du code (attention à la manière dont vous réalisez l'extraction !)
 
 ```python
